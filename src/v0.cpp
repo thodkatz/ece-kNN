@@ -6,13 +6,15 @@
 #include <math.h>
 #include <time.h>
 #include <algorithm> 
+#include <unordered_map>
 
 #define DDOT 0
 
 #define CPP 0
 
-extern void print_dataset(double *x, uint32_t n, uint32_t d);
-extern void print_dataset_yav(double *x, uint32_t n, uint32_t d);
+extern void print_dataset(double *array, uint32_t row, uint32_t col);
+extern void print_dataset_yav(double *array, uint32_t row, uint32_t col);
+extern void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
 
 void transpose(double *src, double *dst, const uint32_t N, const uint32_t M);
 
@@ -70,24 +72,48 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     double diff = diff_time(tic, toc);
     printf("Time elapsed calculating distance matrix (seconds): %lf\n", diff);
 
-    //print_dataset(distance, n, m);
-    print_dataset_yav(distance, n, m);
+    //print_dataset_yav(distance, n, m);
 
-    /* performance issue (cache): nxm and we need find the kth element per column for a row wise array */
+    /* performance issue (cache) */
     double *distance_t = (double*)malloc(m * n * sizeof(double)); // mxn
     transpose(distance, distance_t, n, m);
-    printf("\nThe transpose matrix m x n: \n");
-    print_dataset_yav(distance_t, m, n);
+
+    //printf("\nThe transpose matrix m x n: \n");
+    //print_dataset_yav(distance_t, m, n);
 
     /* we need to be compatible with elearning tester */
+    int isFirst = 1; // indexes 1 or 0 based?
     printf("\nSorting distance matrix until %uth element...\n", k);
+    clock_gettime(CLOCK_MONOTONIC, &tic);
     for(uint32_t i = 0; i < m; i++) {
         double *mth_array = distance_t + i*n; 
+
+        // map each distance value to the index of the corpus
+        std::unordered_map<double, uint32_t> mth_map; 
+        for (uint32_t j=0; j < n; j++) mth_map[mth_array[j]] = j; 
+
+        // find the k smallest
         std::nth_element(mth_array, mth_array + k-1, mth_array + n);
-        for(uint32_t j = 0; j < k; j++) ret.ndist[i*k + j] = mth_array[j];
+
+        for(uint32_t j = 0; j < k; j++) {
+            ret.ndist[i*k + j] = mth_array[j];
+
+            // in case there are duplicate distance values
+            auto range = mth_map.equal_range(mth_array[j]); 
+            auto count = mth_map.count(mth_array[j]);
+            for (auto it = range.first; it != range.second; it++) {
+                ret.nidx[i*k + j] = it->second + isFirst;
+                if(count-- != 1) {
+                    if (j < k) j++; 
+                    else break;
+                }
+            }
+        }
     }
 
-    print_dataset_yav(ret.ndist, m, k);
+    clock_gettime(CLOCK_MONOTONIC, &toc);
+    diff = diff_time(tic, toc);
+    printf("Time elapsed calculating kNN (seconds): %lf\n", diff);
 
     return ret;
 }
@@ -100,3 +126,5 @@ void transpose(double *src, double *dst, const uint32_t N, const uint32_t M) {
         dst[n] = src[M*j + i];
     }
 }
+
+
