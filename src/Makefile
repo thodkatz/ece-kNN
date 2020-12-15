@@ -1,12 +1,13 @@
-CC=gcc
-CFLAGS=-std=c11 -g -Wall -lm
+CC=g++
+CFLAGS= -O3 -Wall
+LDFLAGS= -lopenblas
 
-SRC = main.c diff_time.c coo2csc.c mm2coo.c mmio.c v0.c
+SRC = main.cpp diff_time.cpp mm2coo.c mmio.c v0.cpp
 
 all: main
 	
 main: $(SRC)
-	$(CC) $(CFLAGS) $(SRC) -o $@ -lopenblas
+	$(CC) $(CFLAGS) $(SRC) -o $@ $(LDFLAGS)
 
 .PHONY: clean
 
