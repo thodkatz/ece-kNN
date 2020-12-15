@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c11 -O3 -Wall
+CFLAGS=-std=c11 -g -Wall -lm
 
 SRC = main.c diff_time.c coo2csc.c mm2coo.c mmio.c v0.c
 

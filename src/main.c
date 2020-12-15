@@ -10,14 +10,6 @@ void print_dataset(double *x, uint32_t n, uint32_t d);
 
 int main(int argc, char *argv[])
 {
-    double A[6] = {1.0,2.0,1.0,-3.0,4.0,-1.0};
-    double B[6] = {1.0,2.0,1.0,-3.0,4.0,-1.0};
-    double C[9] = {.5,.5,.5,.5,.5,.5,.5,.5,.5};
-    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans,3,3,2,1,A, 3, B, 3,2,C,3);
-    for(int i=0; i<9; i++)
-        printf("%lf ", C[i]);
-    printf("\n");
-
 
     uint32_t n = 5;
     uint32_t d = 5;
@@ -37,7 +29,8 @@ int main(int argc, char *argv[])
         num_procs = n;
     }
 
-    srand(time(NULL));
+    //srand(time(NULL));
+    srand(1);
     printf("Random generated corpus\n");
     double *x = (double*)malloc(n * d * sizeof(double));
     double *y = (double*)malloc(m * d * sizeof(double)); 
@@ -47,7 +40,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("Random generated query");
+    printf("Random generated query\n");
     for (uint32_t i = 0; i< m; i++) {
         uint32_t random = rand()%n; // there are duplicate indexes
         for (uint32_t j = 0; j < d; j ++) {
@@ -55,9 +48,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    //print_dataset(x, n, d);
-    //printf("\n");
-    //print_dataset(y, m, d);
+    print_dataset(x, n, d);
+    printf("\n");
+    print_dataset(y, m, d);
     
     printf("<----------Version 0---------->\n");
     knnresult ret;
