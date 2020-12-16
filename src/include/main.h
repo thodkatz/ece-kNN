@@ -15,7 +15,7 @@ typedef struct knnresult{
 //! Compute k nearest neighbors of each point in X [n-by-d]
 /*!
 
-  Note: Unexpected behaviour if there are multiple instances of the kth elements
+  Note: If the query point is one of the corpus set points then it is included as the first neighbor.
 
   \param  x      Corpus data points              [n-by-d]
   \param  y      Query data points               [m-by-d]
