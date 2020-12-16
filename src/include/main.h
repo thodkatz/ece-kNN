@@ -15,6 +15,8 @@ typedef struct knnresult{
 //! Compute k nearest neighbors of each point in X [n-by-d]
 /*!
 
+  Note: Unexpected behaviour if there are multiple instances of the kth elements
+
   \param  x      Corpus data points              [n-by-d]
   \param  y      Query data points               [m-by-d]
   \param  n      Number of corpus points         [scalar]
@@ -23,7 +25,7 @@ typedef struct knnresult{
   \param  k      Number of neighbors             [scalar]
 
   \return  The kNN result
-*/
+  */
 knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k);
 
 /*
@@ -40,24 +42,5 @@ double diff_time(struct timespec, struct timespec);
  *
  */
 void mm2coo(int argc, char* argv[], uint32_t **rows, uint32_t **columns, uint32_t nnz, uint32_t n);
-
-/**
- *  \brief COO to CSC conversion
- *
- *  Converts a square matrix from COO to CSC format.
- *
- *  Note: The routine assumes the input COO and the output CSC matrix
- *  to be square.
- *
- */
-void coo2csc(
-  uint32_t       * const row,       /*!< CSC row start indices */
-  uint32_t       * const col,       /*!< CSC column indices */
-  uint32_t const * const row_coo,   /*!< COO row indices */
-  uint32_t const * const col_coo,   /*!< COO column indices */
-  uint32_t const         nnz,       /*!< Number of nonzero elements */
-  uint32_t const         n,         /*!< Number of rows/columns */
-  uint32_t const         isOneBased /*!< Whether COO is 0- or 1-based */
-); 
 
 #endif

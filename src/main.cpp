@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
 
 
     printf("\n<----------Version 0 Prerequisites---------->\n");
-    uint32_t n = 100;
-    uint32_t d = 20;
+    uint32_t n = 10000;
+    uint32_t d = 40;
     uint32_t m = 80;
     uint32_t k = 3;
     uint32_t num_procs = 2;
@@ -54,17 +54,17 @@ int main(int argc, char *argv[])
         }
     }
 
-    print_dataset(x, n, d);
-    printf("\n");
-    print_dataset(y, m, d);
+    /* print_dataset(x, n, d); */
+    /* printf("\n"); */
+    /* print_dataset(y, m, d); */
     
     printf("\n<----------Version 0---------->\n");
     knnresult ret;
     ret = kNN(x, y, n, m, d, k);
     /* printf("\nDistance of kNN\n"); */
     /* print_dataset_yav(ret.ndist, m, k); */
-    printf("\nIndeces of kNN\n");
-    print_indeces(ret.nidx, m, k);
+    /* printf("\nIndeces of kNN\n"); */
+    /* print_indeces(ret.nidx, m, k); */
 
     return 0;
 }
