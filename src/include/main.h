@@ -3,6 +3,16 @@
 
 #include <stdint.h>
 
+#define MALLOC(type, x, len) if((x = (type*)malloc(len * sizeof(type))) == NULL) \
+                                {printf("Bad alloc\n"); exit(1);}
+
+/*
+ * Required to create two objects of struct timespec tic, toc
+ */
+#define TIC() clock_gettime(CLOCK_MONOTONIC, &tic);
+#define TOC(text) clock_gettime(CLOCK_MONOTONIC, &toc); \
+                printf(text, diff_time(tic,toc));
+
 // Definition of the kNN result struct
 typedef struct knnresult{
   uint32_t    * nidx;    //!< Indices (0-based) of nearest neighbors [m-by-k]

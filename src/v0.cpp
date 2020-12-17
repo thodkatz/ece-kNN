@@ -6,13 +6,46 @@
 #include <time.h>
 #include "include/main.h"
 
-// with ddot 1, we have a slight better performance, but they are pretty much the same
-// todo: check the difference between cblas_dgemm and manual matrix multiplication
-#define DDOT 0
+// TODO check the difference between cblas_dgemm and manual matrix multiplication
 
+/*
+ * Calculate dot product using cblas routine
+ *
+ * 0 --> false
+ * 1 --> true 
+ */
+#define CBLAS_DDOT 0
+
+/*
+ * Calculate transpose matrix using cblas routine
+ *
+ * 0 --> false
+ * 1 --> true
+ */
 #define CBLAS_TRANS 1
 
-// CPP 1, way slower...
+/*
+ * Create a transpose of distance matrix (nxm)
+ *
+ * Note: The data is stored in row major format.
+ * For the knn, given the distance matrix (nxm) we need
+ * to iterate each column for the k-select that will 
+ * result to cache miss.
+ *
+ * Is it worth it to create first a transpose matrix?
+ *
+ * 0 --> don't create
+ * 1 --> create
+ *
+ * Results: Much better performance to transpose first
+ */
+#define TRANS 1
+
+/*
+ * Use STL algorithms for k-select
+ * 0 --> false
+ * 1 --> true
+ */
 #define CPP 0
 
 #if CPP == 1
@@ -32,49 +65,53 @@ double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
 knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k) {
 
     knnresult ret;
-    ret.ndist = (double*)malloc(m * k * sizeof(double));
-    ret.nidx  = (uint32_t*)malloc(m * k * sizeof(uint32_t));
+    MALLOC(double, ret.ndist, m*k);
+    MALLOC(uint32_t, ret.nidx, m*k);
     ret.k = k; // included the query to be tested?
     ret.m = m;
 
     struct timespec tic;
     struct timespec toc;
+
     // D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).');
     
+    TIC();
+
     // d1 = sum(X.^2,2)
-    clock_gettime(CLOCK_MONOTONIC, &tic);
-    double d1[n];
-#if DDOT == 0
+    double *d1;
+    MALLOC(double, d1, n);
+#if CBLAS_DDOT == 0
     for (uint32_t i = 0; i < n; i++) {
         d1[i] = 0;
         for (uint32_t j = 0; j < d; j++) {
             d1[i] += x[i*d + j] * x[i*d + j]; 
         }
     }
-#elif DDOT == 1
+#elif CBLAS_DDOT == 1
     for (uint32_t i = 0; i < n; i++) d1[i] = cblas_ddot(d, x + i*d, 1, x + i*d, 1);
 #endif
 
     // d2 = sum(Y.^2,2)
-    double d2[m];
-#if DDOT == 0
+    double *d2;
+    MALLOC(double, d2, m);
+#if CBLAS_DDOT == 0
     for (uint32_t i = 0; i < m; i++) {
         d2[i] = 0;
         for (uint32_t j = 0; j < d; j++) {
             d2[i] += y[i*d + j] * y[i*d + j]; 
         }
     }
-#elif DDOT == 1
+#elif CBLAS_DDOT == 1
     for (uint32_t i = 0; i < m; i++) d2[i] = cblas_ddot(d, y + i*d, 1, y + i*d, 1);
 #endif
 
-    clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf("Time elapsed calculating dot product (seconds): %lf\n", diff_time(tic, toc));
+    TOC("Time elapsed calculating dot product (seconds): %lf\n");
 
+    TIC();
 
-    clock_gettime(CLOCK_MONOTONIC, &tic);
     // D = -2 * X * Y.'
-    double *distance = (double*)malloc(n * m * sizeof(double));
+    double *distance;
+    MALLOC(double, distance, n*m);
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, m, d, -2, x, d, y, d, 0, distance, m);
 
     // D = sqrt(D + d1 + d2)
@@ -84,39 +121,50 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
             distance[i*m + j] = sqrt(distance[i*m + j]);
         }
     }
-    clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf("Time elapsed calculating distance matrix (seconds): %lf\n", diff_time(tic, toc));
 
-    /* printf("\nThe distance matrix m x n: \n"); */
+    free(d1);
+    free(d2);
+
+    TOC("Time elapsed calculating distance matrix (seconds): %lf\n");
+
+    /* printf("\nThe distance matrix n x m: \n"); */
     /* print_dataset_yav(distance, n, m); */
 
-    // performance issue (cache) 
-    clock_gettime(CLOCK_MONOTONIC, &tic);
+#if TRANS == 1
+    TIC();
 
-    double *distance_t = (double*)malloc(m * n * sizeof(double)); // mxn
-#if CBLAS_TRANS == 0
+    // create transpose to explot cache hits 
+    double *distance_t;
+    MALLOC(double, distance_t, m*n);
+#if CBLAS_TRANS == 0  
     transpose(distance, distance_t, n, m);
-#elif CBLAS_TRANS == 1
+#elif CBLAS_TRANS == 1 
     cblas_domatcopy(CblasRowMajor, CblasTrans, n, m, 1, distance, m, distance_t, n); 
 #endif
 
     free(distance);
 
-    clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n", diff_time(tic, toc));
+    TOC("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n");
 
     /* printf("\nThe transpose distance matrix m x n: \n"); */
     /* print_dataset_yav(distance_t, m, n); */
+#endif
 
-    /* we need to be compatible with elearning tester */
     int isFirst = 1; // indexes 1 or 0 based?
     printf("Sorting distance matrix until %uth element...\n", k);
-    clock_gettime(CLOCK_MONOTONIC, &tic);
+
+    TIC();
+
     for(uint32_t i = 0; i < m; i++) {
+#if TRANS == 1
         double *mth_array = distance_t + i*n; 
+#elif TRANS == 0
+        double *mth_array; 
+        MALLOC(double, mth_array, n);
+        for(uint32_t j = 0; j < n; j++) mth_array[j] = distance[i + j*m];
+#endif
 
-#if CPP == 1
-
+#if CPP == 1 
         // map each distance value to the index of the corpus
         std::unordered_map<double, uint32_t> mth_map; 
         for (uint32_t j=0; j < n; j++) mth_map[mth_array[j]] = j; // costs time
@@ -141,9 +189,10 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
                 }
             }
         } 
-#elif CPP == 0
 
-        uint32_t *mth_indeces = (uint32_t*)malloc(n * sizeof(uint32_t));
+#elif CPP == 0 
+        uint32_t *mth_indeces;
+        MALLOC(uint32_t, mth_indeces, n);
         for(uint32_t j = 0; j < n; j ++) mth_indeces[j] = j + isFirst;
 
         qselect(mth_array, mth_indeces, n, k-1);
@@ -151,14 +200,20 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
         memcpy(ret.nidx + i*k, mth_indeces, sizeof(uint32_t) * k);
 
         free(mth_indeces);
+#endif
 
+#if TRANS == 0
+        free(mth_array);
 #endif
     }
 
+#if TRANS == 1
     free(distance_t);
+#elif TRANS == 0
+    free(distance);
+#endif
 
-    clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf("Time elapsed calculating kNN given distance matrix (seconds): %lf\n", diff_time(tic, toc));
+    TOC("Time elapsed calculating kNN given distance matrix (seconds): %lf\n");
 
     return ret;
 }
@@ -176,7 +231,7 @@ void transpose(double *src, double *dst, const uint32_t N, const uint32_t M) {
 // fix me: median of 3
 uint32_t partition(double arr[], uint32_t start, uint32_t end) { 
     int x = arr[end],
-        i = start; 
+    i = start; 
     for (uint32_t j = start; j <= end - 1; j++) { 
         if (arr[j] <= x) { 
             //swap(arr[i], arr[j]); 
@@ -215,8 +270,9 @@ int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k) {
 
 // rosetta code wiki modified
 double qselect(double *v, uint32_t *idx, int64_t len, int64_t k) {
-#	define SWAPval(a, b) { tmp1 = v[a]; v[a] = v[b]; v[b] = tmp1; }
-#	define SWAPidx(a, b) { tmp2 = idx[a]; idx[a] = idx[b]; idx[b] = tmp2; }
+#define SWAPval(a, b) { tmp1 = v[a]; v[a] = v[b]; v[b] = tmp1; }
+#define SWAPidx(a, b) { tmp2 = idx[a]; idx[a] = idx[b]; idx[b] = tmp2; }
+
 	int32_t i, st;
     double tmp1;
     double tmp2;

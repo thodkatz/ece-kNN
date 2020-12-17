@@ -12,7 +12,7 @@ void print_dataset(double *array, uint32_t row, uint32_t col);
 void print_dataset_yav(double *array, uint32_t row, uint32_t col);
 void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
 
-#define BLOCKS 2
+#define BLOCKS 1
 
 int main(int argc, char *argv[])
 {
@@ -22,10 +22,10 @@ int main(int argc, char *argv[])
     /**********************************************************/
 
     printf("\n<----------Version 0---------->\n");
-    uint32_t n = 100000;
-    uint32_t d = 20;
+    uint32_t n = (uint32_t)1e5;
+    uint32_t d = 400;
     uint32_t m = 800;
-    uint32_t k = 3;
+    uint32_t k = 30;
     uint32_t num_procs = 2;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
@@ -43,10 +43,12 @@ int main(int argc, char *argv[])
     //srand(time(NULL));
     srand(1);
     printf("n = %u, d = %u, m = %u, k = %u\n", n, d, m, k);
-    printf("Corpus array size: %u\n Query array size: %u\n", n*d, m*d);
+    printf("Corpus array size: %0.3lf MB\n Query array size: %0.3lf MB\n", n*d*8/1e6, m*d*8/1e6);
     printf("Random generated corpus...\n");
-    double *x = (double*)malloc(n * d * sizeof(double));
-    double *y = (double*)malloc(m * d * sizeof(double)); 
+    double *x, *y;
+    MALLOC(double, x, n*d);
+    MALLOC(double, y, m*d);
+
     for (uint32_t i = 0; i< n; i++) {
         for (uint32_t j = 0; j < d; j++) {
             x[i*d + j] = (double)(rand()%100);
@@ -56,8 +58,8 @@ int main(int argc, char *argv[])
     knnresult ret;
     ret.k = k;
     ret.m = m;
-    ret.ndist = (double*)malloc(m * k * sizeof(double));
-    ret.nidx = (uint32_t*)malloc(m * k * sizeof(uint32_t));
+    MALLOC(double, ret.ndist, m*k);
+    MALLOC(uint32_t, ret.nidx, m*k);
 
     // blocking the query
     uint32_t blocks = BLOCKS;
@@ -68,7 +70,8 @@ int main(int argc, char *argv[])
 
     struct timespec tic;
     struct timespec toc;
-    clock_gettime(CLOCK_MONOTONIC, &tic);
+
+    TIC();
 
     // for each block (subset of query set) calculate the kNN and then merge the results
     for (uint32_t curr = 0; curr < blocks; curr++) {
@@ -101,8 +104,7 @@ int main(int argc, char *argv[])
     /* printf("\nIndeces of kNN\n"); */
     /* print_indeces(ret.nidx, m, k); */
 
-    clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf("Time elapsed calculating kNN total (seconds): %lf\n", diff_time(tic, toc));
+    TOC("\nTime elapsed calculating kNN total (seconds): %lf\n");
 
     free(x);
     free(y);
