@@ -38,7 +38,7 @@
  *
  * Results: Much better performance to transpose first
  */
-#define TRANS 1
+#define TRANS 0
 
 /*
  * Use STL algorithms for k-select
@@ -50,12 +50,12 @@
 /*
  * Calculate euclidean distance matrix
  *
- * 0 --> naive d^2 = (x_i - y_i)^2
- * 1 --> use D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).');
  *
- * Results: 1 way better
+ * 0 --> naive d^2 = (x_i - y_i)^2 Requires TRANS == 0
+ * 1 --> D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).') Requires TRANS == 1
+ * 2 --> D' = sqrt(sum(X.^2,2).' - 2 * Y * X.' + sum(Y.^2, 2)) (mxn) Requires TRANS == 0
  */
-#define MATRIX 1
+#define MATRIX 2
 
 #if CPP == 1
 #include <algorithm> 
@@ -71,7 +71,8 @@ uint32_t partition(double arr[], uint32_t start, uint32_t end);
 int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k);
 double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
 double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
-double *euclidean_distance_yav(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
+double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
+double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
 
 knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k) {
 
@@ -83,30 +84,37 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 
     struct timespec tic;
     struct timespec toc;
-
     
     TIC();
-#if MATRIX == 1
+#if MATRIX == 0
+    double *distance = euclidean_distance_naive(x, y, n, d, m);
+#elif MATRIX == 1
     double *distance = euclidean_distance(x, y, n, d, m);
-#elif MATRIX == 0
-    double *distance = euclidean_distance_yav(x, y, n, d, m);
+#elif MATRIX == 2
+    double *distance = euclidean_distance_notrans(x, y, n, d, m);
 #endif
     TOC("Time elapsed calculating distance matrix (seconds): %lf\n");
 
+#if MATRIX == 1
     /* printf("\nThe distance matrix n x m: \n"); */
     /* print_dataset_yav(distance, n, m); */
+#elif MATRIX == 2
+    /* printf("\nThe distance matrix m x n: \n"); */
+    /* print_dataset_yav(distance, m, n); */
+#endif
+
 
 #if TRANS == 1
-    double *distance_t;
+    double *distance_trans;
     if (n != m) {
         TIC();
 
         // create transpose to exploit cache hits 
-        MALLOC(double, distance_t, m*n);
+        MALLOC(double, distance_trans, m*n);
 #if CBLAS_TRANS == 0  
-        transpose(distance, distance_t, n, m);
+        transpose(distance, distance_trans, n, m);
 #elif CBLAS_TRANS == 1 
-        cblas_domatcopy(CblasRowMajor, CblasTrans, n, m, 1, distance, m, distance_t, n); 
+        cblas_domatcopy(CblasRowMajor, CblasTrans, n, m, 1, distance, m, distance_trans, n); 
 #endif
 
         free(distance);
@@ -114,9 +122,9 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
         TOC("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n");
 
         /* printf("\nThe transpose distance matrix m x n: \n"); */
-        /* print_dataset_yav(distance_t, m, n); */
+        /* print_dataset_yav(distance_trans, m, n); */
     }
-    else distance_t = distance; // symmetric
+    else distance_trans = distance; // symmetric
 #endif
 
     int isFirst = 1; // indeces 1 or 0 based?
@@ -126,13 +134,13 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 
     for(uint32_t i = 0; i < m; i++) {
 #if TRANS == 1
-        double *mth_array = distance_t + i*n; 
+        double *mth_array = distance_trans + i*n; 
 #elif TRANS == 0
         double *mth_array; 
 #if MATRIX == 1
         MALLOC(double, mth_array, n);
         for(uint32_t j = 0; j < n; j++) mth_array[j] = distance[i + j*m];
-#elif MATRIX == 0
+#elif MATRIX == 0 || MATRIX == 2
         mth_array = distance + i*n;
 #endif
 #endif
@@ -181,7 +189,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     }
 
 #if TRANS == 1
-    free(distance_t);
+    free(distance_trans);
 #elif TRANS == 0
     free(distance);
 #endif
@@ -194,6 +202,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 
 // D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).');
 double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
+    printf("Calculating distance matrix nxm approach\n");
     struct timespec tic;
     struct timespec toc;
 
@@ -234,7 +243,7 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
     MALLOC(double, distance, n*m);
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, n, m, d, -2, x, d, y, d, 0, distance, m);
 
-    // D = sqrt(D + d1 + d2)
+    // D = sqrt(D + d1 + d2.')
     for (uint32_t i = 0; i < n; i++) {
         for (uint32_t j = 0; j < m; j++) {
             distance[i*m + j] += d1[i] + d2[j];
@@ -248,8 +257,66 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
     return distance;
 }
 
+// D' = sqrt(sum(X.^2,2).' - 2 * Y * X.' + sum(Y.^2, 2))
+double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
+    printf("Calculating distance matrix mxn approach\n");
+    struct timespec tic;
+    struct timespec toc;
+
+    TIC();
+
+    // d1 = sum(X.^2,2)
+    double *d1;
+    MALLOC(double, d1, n);
+#if CBLAS_DDOT == 0
+    for (uint32_t i = 0; i < n; i++) {
+        d1[i] = 0;
+        for (uint32_t j = 0; j < d; j++) {
+            d1[i] += x[i*d + j] * x[i*d + j]; 
+        }
+    }
+#elif CBLAS_DDOT == 1
+    for (uint32_t i = 0; i < n; i++) d1[i] = cblas_ddot(d, x + i*d, 1, x + i*d, 1);
+#endif
+
+    // d2 = sum(Y.^2,2)
+    double *d2;
+    MALLOC(double, d2, m);
+#if CBLAS_DDOT == 0
+    for (uint32_t i = 0; i < m; i++) {
+        d2[i] = 0;
+        for (uint32_t j = 0; j < d; j++) {
+            d2[i] += y[i*d + j] * y[i*d + j]; 
+        }
+    }
+#elif CBLAS_DDOT == 1
+    for (uint32_t i = 0; i < m; i++) d2[i] = cblas_ddot(d, y + i*d, 1, y + i*d, 1);
+#endif
+
+    TOC("Time elapsed calculating dot product (seconds): %lf\n");
+
+    // D = -2 * Y * X.'
+    double *distance;
+    MALLOC(double, distance, n*m);
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasTrans, m, n, d, -2, y, d, x, d, 0, distance, n);
+
+    // D = sqrt(D + d1.' + d2)
+    for (uint32_t i = 0; i < m; i++) {
+        for (uint32_t j = 0; j < n; j++) {
+            distance[i*n + j] += d1[j] + d2[i];
+            distance[i*n + j] = sqrt(distance[i*n + j]);
+        }
+    }
+
+    free(d1);
+    free(d2);
+
+    return distance;
+}
+
+
 // naive euclidean distance matrix. That way we don't need to transpose the matrix though
-double *euclidean_distance_yav(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
+double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
     printf("Calculating distance matrix naive approach\n");
     double *distance;
     MALLOC(double, distance, n*m);
@@ -263,9 +330,6 @@ double *euclidean_distance_yav(double *x, double *y, uint32_t n, uint32_t d, uin
             distance[n*i + j] = sqrt(distance[n*i + j]);
         }
     }
-
-    /* printf("\nThe distance matrix m x n: \n"); */
-    /* print_dataset_yav(distance, m, n); */
 
     return distance;
 }
