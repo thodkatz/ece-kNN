@@ -22,11 +22,11 @@ int main(int argc, char *argv[])
     /**********************************************************/
 
     printf("\n<----------Version 0---------->\n");
-    uint32_t n = (uint32_t)1e5;
-    uint32_t d = 400;
-    uint32_t m = 800;
-    uint32_t k = 30;
-    uint32_t num_procs = 2;
+
+    uint32_t n = (uint32_t)1e1;
+    uint32_t d = 4;
+    uint32_t m = 8;
+    uint32_t k = 3;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
         return -1;
@@ -35,16 +35,14 @@ int main(int argc, char *argv[])
         printf("Number of nearest elements exceeded the number of elements in the corpus set\n");
         return -1;
     }
-    if (num_procs > n) {
-        printf("The number of processors exceeded the number of elements in the corpus set\n");
-        num_procs = n;
-    }
+
 
     //srand(time(NULL));
     srand(1);
     printf("n = %u, d = %u, m = %u, k = %u\n", n, d, m, k);
     printf("Corpus array size: %0.3lf MB\n Query array size: %0.3lf MB\n", n*d*8/1e6, m*d*8/1e6);
     printf("Random generated corpus...\n");
+
     double *x, *y;
     MALLOC(double, x, n*d);
     MALLOC(double, y, m*d);
@@ -75,7 +73,6 @@ int main(int argc, char *argv[])
 
     // for each block (subset of query set) calculate the kNN and then merge the results
     for (uint32_t curr = 0; curr < blocks; curr++) {
-
         uint32_t start = curr*block_size;
         uint32_t end = start + block_size;
         if (curr == blocks-1) end = m;
@@ -97,14 +94,18 @@ int main(int argc, char *argv[])
     ret_blocked = kNN(x, y + start*d, n, end-start, d, k);
     memcpy(ret.ndist + start*k, ret_blocked.ndist, sizeof(double) * k * (end - start));
     memcpy(ret.nidx + start*k, ret_blocked.nidx, sizeof(uint32_t) * k * (end - start));
+
+    free(ret_blocked.ndist);
+    free(ret_blocked.nidx);
     }
+
+    TOC("\nTime elapsed calculating kNN total (seconds): %lf\n");
 
     /* printf("\nDistance of kNN\n"); */
     /* print_dataset_yav(ret.ndist, m, k); */
     /* printf("\nIndeces of kNN\n"); */
     /* print_indeces(ret.nidx, m, k); */
 
-    TOC("\nTime elapsed calculating kNN total (seconds): %lf\n");
 
     free(x);
     free(y);

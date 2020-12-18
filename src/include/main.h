@@ -38,6 +38,18 @@ typedef struct knnresult{
   */
 knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k);
 
+//! Compute distributed all-kNN of points in X
+/*!
+
+  \param  X      Data points                     [n-by-d]
+  \param  n      Number of data points           [scalar]
+  \param  d      Number of dimensions            [scalar]
+  \param  k      Number of neighbors             [scalar]
+
+  \return  The kNN result
+*/
+knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k);
+
 /*
  * \brief Elapsed time between two reference points using monotonic clock
  *
