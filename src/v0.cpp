@@ -76,6 +76,12 @@ double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d,
 
 knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k) {
 
+    /* printf("Entering knn function, n: %d, m:%d\n", n, m); */
+    /* printf("The x is \n"); */
+    /* print_dataset_yav(x, n, d); */
+    /* printf("The y is \n"); */
+    /* print_dataset_yav(y, m, d); */
+
     knnresult ret;
     MALLOC(double, ret.ndist, m*k);
     MALLOC(uint32_t, ret.nidx, m*k);
@@ -176,9 +182,15 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
         MALLOC(uint32_t, mth_indeces, n);
         for(uint32_t j = 0; j < n; j ++) mth_indeces[j] = j + isFirst;
 
-        qselect(mth_array, mth_indeces, n, k-1);
-        memcpy(ret.ndist + i*k, mth_array, sizeof(double) * k);
-        memcpy(ret.nidx + i*k, mth_indeces, sizeof(uint32_t) * k);
+        if(n>k) {
+            qselect(mth_array, mth_indeces, n, k-1);
+            memcpy(ret.ndist + i*k, mth_array, sizeof(double) * k);
+            memcpy(ret.nidx + i*k, mth_indeces, sizeof(uint32_t) * k);
+        }
+        else {  
+            memcpy(ret.ndist + i*n, mth_array, sizeof(double) * n);
+            memcpy(ret.nidx + i*n, mth_indeces, sizeof(uint32_t) * n);
+        }
 
         free(mth_indeces);
 #endif
@@ -196,6 +208,11 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 
     TOC("Time elapsed calculating kNN given distance matrix (seconds): %lf\n");
 
+    /* if (k>n) k = n; */
+    /* printf("\nDistance of kNN\n"); */
+    /* print_dataset_yav(ret.ndist, m, k); */
+    /* printf("\nIndeces of kNN\n"); */
+    /* print_indeces(ret.nidx, m, k); */
     return ret;
 }
 
