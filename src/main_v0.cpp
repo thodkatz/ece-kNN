@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     uint32_t n = (uint32_t)1e1;
     uint32_t d = 4;
     uint32_t m = 8;
-    uint32_t k = 10;
+    uint32_t k = 3;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
         return -1;

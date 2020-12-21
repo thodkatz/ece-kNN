@@ -54,9 +54,16 @@ int main(int argc, char *argv[])
         /* print_indeces(ret.nidx, m, k); */    
 
         TOC("\nTime elapsed calculating kNN total (seconds): %lf\n");
+
+        printf("\nDistance of kNN\n");
+        //print_dataset_yav(ret.ndist, ret.m, k);
+        /* printf("\nIndeces of kNN\n"); */
+        /* print_indeces(ret.nidx, ret.m, k); */
+
         //free(x);
         free(ret.nidx);
         free(ret.ndist);
+
     }
     
     MPI_Finalize();

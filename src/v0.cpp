@@ -62,6 +62,9 @@
 #include <unordered_map>
 #endif
 
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 extern void print_dataset(double *array, uint32_t row, uint32_t col);
 extern void print_dataset_yav(double *array, uint32_t row, uint32_t col);
 extern void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
@@ -83,8 +86,8 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     /* print_dataset_yav(y, m, d); */
 
     knnresult ret;
-    MALLOC(double, ret.ndist, m*k);
-    MALLOC(uint32_t, ret.nidx, m*k);
+    MALLOC(double, ret.ndist, m*MIN(k, n));
+    MALLOC(uint32_t, ret.nidx, m*MIN(k, n));
     ret.k = k; // included the query to be tested?
     ret.m = m;
 
@@ -213,6 +216,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     /* print_dataset_yav(ret.ndist, m, k); */
     /* printf("\nIndeces of kNN\n"); */
     /* print_indeces(ret.nidx, m, k); */
+
     return ret;
 }
 
