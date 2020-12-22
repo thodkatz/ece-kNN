@@ -22,6 +22,9 @@ extern double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
 
 knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
+    struct timespec tic;
+    struct timespec toc;
+
     int numtasks, rank, errc;
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     MPI_Comm_size(MPI_COMM_WORLD,&numtasks);
@@ -54,6 +57,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         srand(1);
         printf("n = %u, d = %u, k = %u\n", n, d, k);
         printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
+        printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
         printf("Random generated corpus...\n");
 
         MALLOC(double, x, n*d);
@@ -86,13 +90,13 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     }
 
 
-    if (rank == MASTER){
-    printf("The size per process\n");
-    for(int i = 0; i < numtasks; i++) printf("%d ", size_per_proc[i]);
-    printf("\n");
-    printf("The memory_offset per process\n");
-    for(int i = 0; i < numtasks; i++) printf("%d ", memory_offset[i]);
-    }
+    /* if (rank == MASTER){ */
+    /* printf("The size per process\n"); */
+    /* for(int i = 0; i < numtasks; i++) printf("%d ", size_per_proc[i]); */
+    /* printf("\n"); */
+    /* printf("The memory_offset per process\n"); */
+    /* for(int i = 0; i < numtasks; i++) printf("%d ", memory_offset[i]); */
+    /* } */
 
     double *init_buffer;
     MALLOC(double, init_buffer, size_per_proc[rank]);
@@ -103,16 +107,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     /* print_dataset_yav(init_buffer, size_per_proc[rank]/d, d); */
     /* printf("\n"); */
 
-    double *curr_buffer;
-    double *new_buffer;
-    int next = rank;
-    int prev = 0;
-    int local_n_curr = 0;
-    int local_n_old = 0;
 
-    int m_per_process = size_per_proc[rank]/d;
 
-    // Gather prerequisites, but we need to pass struct, not only dist and idx (2 Gathers required)
     int size_per_proc_final[numtasks];
     int memory_offset_final[numtasks];
     int remain_final = n%numtasks;
@@ -129,22 +125,23 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         }
 
         if(i!= 0) memory_offset_final[i] = memory_offset_final[i-1] + size_per_proc_final[i-1];
-
-        /* // dist and idx */
-        /* memory_offset_final[i] *= 2; */
-        /* size_per_proc_final[i] *= 2; */
     }
 
-    if (rank == MASTER){
-    printf("\nThe size per process\n");
-    for(int i = 0; i < numtasks; i++) printf("%d ", size_per_proc_final[i]);
-    printf("\n");
-    printf("The memory_offset_final per process\n");
-    for(int i = 0; i < numtasks; i++) printf("%d ", memory_offset_final[i]);
-    }
-    printf("\n");
+    /* if (rank == MASTER){ */
+    /* printf("\nThe size per process\n"); */
+    /* for(int i = 0; i < numtasks; i++) printf("%d ", size_per_proc_final[i]); */
+    /* printf("\n"); */
+    /* printf("The memory_offset_final per process\n"); */
+    /* for(int i = 0; i < numtasks; i++) printf("%d ", memory_offset_final[i]); */
+    /* } */
+    /* printf("\n"); */
 
-    knnresult ret_old;
+    double *curr_buffer;
+    double *new_buffer;
+    int local_n_curr = 0;
+
+    int m_per_process = size_per_proc[rank]/d;
+
     knnresult ret_curr;
 
     knnresult ret_per_process;
@@ -154,42 +151,35 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     for (int i = 0; i < m_per_process * k; i++) {
         ret_per_process.ndist[i] = INFINITY;
-        ret_per_process.nidx[i] = INFINITY;
+        ret_per_process.nidx[i] = UINT32_MAX;
     }
 
     MPI_Request req;
     MPI_Status stat;
 
-    for (int i = 0; i < numtasks; i++) {
+    TIC();
 
+    for (int i = 0; i < numtasks; i++) {
+        int isBlocked = 0;
+
+        int grid = memory_offset[rank]/d;
+        local_n_curr = size_per_proc[rank]/d;
 
         // first time get data via scatterv
-        if (i == 0) curr_buffer = init_buffer;
-        else curr_buffer = new_buffer;
+        if (i == 0) {
+            // do not free init buffer
+            MALLOC(double, curr_buffer, size_per_proc[rank]);
+            memcpy(curr_buffer, init_buffer, sizeof(double) * size_per_proc[rank]);
+        }
+        else {
+            MALLOC(double, curr_buffer, size_per_proc[rank]);
+            memcpy(curr_buffer, new_buffer, sizeof(double) * size_per_proc[rank]);
+            free(new_buffer);
+        }
+
 
         // one step ahead. Calculate the next buffer to avoid communication cost
-        prev = next;
-        int grid = memory_offset[rank]/d;
-
         if (i <= numtasks-2) {
-            next++;
-            if (next == numtasks)  next = 0;
-
-            /* // receive */
-            MALLOC(double, new_buffer, size_per_proc[next]);
-
-            /* //MPI_Irecv(&new_buffer, size_per_proc[next], MPI_DOUBLE, MASTER, tag, MPI_COMM_WORLD, &req); */
-        
-            /* // master send data to everyone */
-            /* if (rank == MASTER) { */
-            /*     for (int j = 0; j < numtasks; j++) { */
-            /*         double *local_x; */
-            /*         MALLOC(double, local_x, size_per_proc[]); */
-            /*         memcpy(local_x, x + memory_offset[next], sizeof(double) * size_per_proc[rank]); */
-            /*         // non blocking send */
-            /*         MPI_Isend(&local_x, size_per_proc[next], MPI_DOUBLE, rank, tag, MPI_COMM_WORLD, req); */
-            /*     } */
-            /* } */
 
             // non blocking scatterv
             // cycle through the size per proc to fill the distance matrix
@@ -214,22 +204,16 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             /* } */
             /* printf("\n"); */
 
+            MALLOC(double, new_buffer, size_per_proc[rank]);
 
-            MPI_Iscatterv(x, size_per_proc, memory_offset, MPI_DOUBLE, new_buffer, size_per_proc[next], MPI_DOUBLE, MASTER, MPI_COMM_WORLD, &req);
+            MPI_Iscatterv(x, size_per_proc, memory_offset, MPI_DOUBLE, new_buffer, size_per_proc[rank], MPI_DOUBLE, MASTER, MPI_COMM_WORLD, &req);
+            isBlocked = 1;
         }
 
-        if (i != 0) local_n_old = local_n_curr;
-        local_n_curr = size_per_proc[prev]/d;
 
-        if (i != 0) {
-            MALLOC(double, ret_old.ndist, MIN(local_n_old, k) * m_per_process);
-            MALLOC(uint32_t, ret_old.nidx, MIN(local_n_old, k) * m_per_process);
-            memcpy(ret_old.ndist, ret_curr.ndist, sizeof(double) * MIN(local_n_old, k) * m_per_process);
-            memcpy(ret_old.nidx, ret_curr.nidx, sizeof(uint32_t) * MIN(local_n_old, k) * m_per_process);
-            free(ret_curr.ndist);
-            free(ret_curr.nidx);
-        }
         ret_curr = kNN(curr_buffer, init_buffer, local_n_curr, m_per_process, d, k);
+        free(curr_buffer);
+        printf("\n");
 
         /* printf("\nIndeces of kNN ret curr before\n"); */
         /* print_indeces(ret_curr.nidx, ret_curr.m, k); */
@@ -249,30 +233,29 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
         /* if (i != 0) { */
         /*     printf("\nDistance of kNN ret old\n"); */
-        /*     print_dataset_yav(ret_old.ndist, ret_old.m, k); */
+        /*     print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k); */
         /*     printf("\nIndeces of kNN ret old\n"); */
-        /*     print_indeces(ret_old.nidx, ret_old.m, k); */
+        /*     print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
         /* } */
 
-        // comparinggg the ret_curr with the new ret_new
+        // compare the old data with the newest data
         if (i != 0) {
-            // we need a function here. Compare the ndist and nidx
             for (int j = 0; j < m_per_process; j++) {
 
+                int len_curr = MIN(local_n_curr, k);
+                int len_total = k + len_curr;
+
                 double *merged_distance;
-                int len_dist1 = MIN(local_n_old, k);
-                int len_dist2 = MIN(local_n_curr, k);
-                int len_total = len_dist1 + len_dist2;
                 MALLOC(double, merged_distance, len_total); 
 
-                memcpy(merged_distance, ret_old.ndist + j*len_dist1, sizeof(double) * len_dist1);
+                memcpy(merged_distance, ret_per_process.ndist + j*k, sizeof(double) * k);
                 /* printf("The ret old\n"); */
-                /* for(int l = 0; l < len_dist1; l++) printf("%lf ", ret_old.ndist[l + j*len_dist1]); */
+                /* for(int l = 0; l < k; l++) printf("%lf ", ret_per_process.ndist[l + j*k]); */
                 /* printf("\n"); */
                 /* printf("The merged distance is\n"); */
-                /* for(int l = 0; l < len_dist1; l++) printf("%lf ", merged_distance[l]); */
+                /* for(int l = 0; l < k; l++) printf("%lf ", merged_distance[l]); */
                 /* printf("\n"); */
-                memcpy(merged_distance + len_dist1, ret_curr.ndist + j*len_dist2, sizeof(double) * len_dist2);
+                memcpy(merged_distance + k, ret_curr.ndist + j*len_curr, sizeof(double) * len_curr);
                 /* printf("The merged distance is\n"); */
                 /* for(int l = 0; l < len_total; l++) printf("%lf ", merged_distance[l]); */
                 /* printf("\n"); */
@@ -280,24 +263,19 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
                 uint32_t *merged_indeces;
                 MALLOC(uint32_t, merged_indeces, len_total); 
 
-                memcpy(merged_indeces, ret_old.nidx + j*len_dist1, sizeof(uint32_t) * len_dist1);
+                memcpy(merged_indeces, ret_per_process.nidx + j*k, sizeof(uint32_t) * k);
                 /* printf("The merged indeces is\n"); */
-                /* for(int l = 0; l < len_dist1; l++) printf("%d ", merged_indeces[l]); */
+                /* for(int l = 0; l < k; l++) printf("%d ", merged_indeces[l]); */
                 /* printf("\n"); */
-                memcpy(merged_indeces + len_dist1, ret_curr.nidx + j*len_dist2, sizeof(uint32_t) * len_dist2);
+                memcpy(merged_indeces + k, ret_curr.nidx + j*len_curr, sizeof(uint32_t) * len_curr);
                 /* printf("The merged indeces is\n"); */
                 /* for(int l = 0; l < len_total; l++) printf("%d ", merged_indeces[l]); */
                 /* printf("\n"); */
 
-                if (len_total > k) {
-                    qselect(merged_distance, merged_indeces, len_total, k-1);
-                    memcpy(ret_per_process.ndist + j*k, merged_distance, sizeof(double) * k);
-                    memcpy(ret_per_process.nidx + j*k, merged_indeces, sizeof(uint32_t) * k);
-                }
-                else {  
-                    memcpy(ret_per_process.ndist + j*k, merged_distance, sizeof(double) * len_total);
-                    memcpy(ret_per_process.nidx + j*k, merged_indeces, sizeof(uint32_t) * len_total);
-                }       
+                // update
+                qselect(merged_distance, merged_indeces, len_total, k-1);
+                memcpy(ret_per_process.ndist + j*k, merged_distance, sizeof(double) * k);
+                memcpy(ret_per_process.nidx + j*k, merged_indeces, sizeof(uint32_t) * k);
 
                 /* printf("The per process distance is\n"); */
                 /* for(int l = 0; l<k; l++) printf("%lf ", ret_per_process.ndist[l + j*k]); */
@@ -307,60 +285,48 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
                 /* for(int l = 0; l<k; l++) printf("%d ", ret_per_process.nidx[l + j*k]); */
                 /* printf("\n"); */
 
-
                 free(merged_distance);
                 free(merged_indeces);
             }
 
-            free(ret_old.ndist);
-            free(ret_old.nidx);
+            free(ret_curr.ndist);
+            free(ret_curr.nidx);
         }
-        else ret_per_process = ret_curr;
+        else {
+            memcpy(ret_per_process.ndist, ret_curr.ndist, sizeof(double) * MIN(local_n_curr, k) * m_per_process);
+            memcpy(ret_per_process.nidx, ret_curr.nidx, sizeof(uint32_t) * MIN(local_n_curr, k) * m_per_process);
+            free(ret_curr.ndist);
+            free(ret_curr.nidx);
+        }
 
-        if(numtasks != 1) MPI_Wait(&req, &stat);
+        if(isBlocked) MPI_Wait(&req, &stat);
 
         /* if(i <= numtasks-2) { */
         /*     printf("Rank: %d. The next buff is:\n", rank); */
-        /*     print_dataset_yav(new_buffer, size_per_proc[next]/d, d); */
+        /*     print_dataset_yav(new_buffer, size_per_proc[rank]/d, d); */
         /* } */
 
     }
 
-
-    free(new_buffer);
     free(init_buffer);
 
     printf("\n");
 
-    printf("\nRank %d. Distance of kNN\n", rank);
-    print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k);
-    printf("\nRank %d. Indeces of kNN\n", rank);
-    print_indeces(ret_per_process.nidx, ret_per_process.m, k);
+    /* printf("\nRank %d. Distance of kNN\n", rank); */
+    /* print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k); */
+    /* printf("\nRank %d. Indeces of kNN\n", rank); */
+    /* print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
 
+    clock_gettime(CLOCK_MONOTONIC, &toc);
+    printf("Rank: %d. Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
 
     // Gather to root
-    // pass structs to root. How?
-    if(rank == MASTER) {
-        printf("The n is %d and k is %d\n", n, k);
-    }
-
-    //MPI_Gatherv(ret_per_process.ndist, size_per_proc_final[rank], MPI_DOUBLE, ret_master.ndist, size_per_proc_final, memory_offset_final, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
-
-    /* MPI_Gatherv(ret_per_process.nidx, size_per_proc_final[rank], MPI_INT, ret_master.nidx, size_per_proc_final, memory_offset_final, MPI_DOUBLE, MASTER, MPI_COMM_WORLD); */
-
-    if (rank == MASTER) {
-
-    /* printf("\nMASTER. Distance of kNN\n"); */
-    /* print_dataset_yav(ret_master.ndist, ret_master.m, k); */
-    /* printf("\nMASTER. Indeces of kNN\n"); */
-    /* print_indeces(ret_master.nidx, ret_master.m, k); */
-
-    }
+    MPI_Gatherv(ret_per_process.ndist, size_per_proc_final[rank], MPI_DOUBLE, ret_master.ndist, size_per_proc_final, memory_offset_final, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
+    MPI_Gatherv(ret_per_process.nidx, size_per_proc_final[rank], MPI_INT, ret_master.nidx, size_per_proc_final, memory_offset_final, MPI_INT, MASTER, MPI_COMM_WORLD);
 
     free(ret_per_process.ndist);
     free(ret_per_process.nidx);
     if(rank == MASTER) free(x);
-
 
     return ret_master;
 }

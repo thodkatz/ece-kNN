@@ -8,6 +8,10 @@
 #include <string.h>
 #include <mpi.h>
 
+#define CYN   "\x1B[36m"
+#define RED   "\x1B[31m"
+#define RESET "\x1B[0m"
+
 #define MASTER 0
 
 double diff_time (struct timespec start, struct timespec end);
@@ -31,7 +35,6 @@ int main(int argc, char *argv[])
 
     uint32_t n = (uint32_t)1e1;
     uint32_t d = 4;
-    uint32_t m = 8;
     uint32_t k = 3;
 
     double *x;
@@ -45,22 +48,15 @@ int main(int argc, char *argv[])
     // the return is meaningful only for the MASTER
     ret = distrAllkNN(x, n, d, k);
 
-    TOC("Time elapsed calculating kNN per process (seconds): %lf\n");
-
     if (rank == MASTER) {
-        /* printf("\nDistance of kNN\n"); */
-        /* print_dataset_yav(ret.ndist, m, k); */
-        /* printf("\nIndeces of kNN\n"); */
-        /* print_indeces(ret.nidx, m, k); */    
 
-        TOC("\nTime elapsed calculating kNN total (seconds): %lf\n");
+        TOC(RED "\nTOTAL: " RESET "Time elapsed calculating kNN (seconds): %lf\n");
 
         printf("\nDistance of kNN\n");
-        //print_dataset_yav(ret.ndist, ret.m, k);
-        /* printf("\nIndeces of kNN\n"); */
-        /* print_indeces(ret.nidx, ret.m, k); */
+        print_dataset_yav(ret.ndist, ret.m, k);
+        printf("\nIndeces of kNN\n");
+        print_indeces(ret.nidx, ret.m, k);
 
-        //free(x);
         free(ret.nidx);
         free(ret.ndist);
 
