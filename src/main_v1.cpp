@@ -4,30 +4,16 @@
 #include <time.h>
 #include <stdlib.h>
 #include "include/main.h"
+#include "include/v1.h"
 #include <math.h>
 #include <string.h>
 #include <mpi.h>
 
-#define CYN   "\x1B[36m"
-#define RED   "\x1B[31m"
-#define RESET "\x1B[0m"
-
-#define MASTER 0
-
-double diff_time (struct timespec start, struct timespec end);
-void print_dataset(double *array, uint32_t row, uint32_t col);
-void print_dataset_yav(double *array, uint32_t row, uint32_t col);
-void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
-
 int main(int argc, char *argv[])
 {
-
-
-
     /**********************************************************/
     /*                    Version 1                           */
     /**********************************************************/
-
 
     int  numtasks, rank; 
     MPI_Init(&argc, &argv);
@@ -43,14 +29,14 @@ int main(int argc, char *argv[])
     struct timespec tic;
     struct timespec toc;
 
-    TIC();
+    TIC()
 
     // the return is meaningful only for the MASTER
     ret = distrAllkNN(x, n, d, k);
 
     if (rank == MASTER) {
 
-        TOC(RED "\nTOTAL: " RESET "Time elapsed calculating kNN (seconds): %lf\n");
+        TOC(RED "\nTOTAL: " RESET "Time elapsed calculating kNN (seconds): %lf\n")
 
         printf("\nDistance of kNN\n");
         print_dataset_yav(ret.ndist, ret.m, k);

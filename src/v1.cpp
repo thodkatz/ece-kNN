@@ -1,24 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "include/main.h"
+#include "include/v1.h"
 #include <mpi.h>
 #include <math.h>
-
-#define MASTER 0
-
-
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
-// color because why not
-#define CYN   "\x1B[36m"
-#define RED   "\x1B[31m"
-#define RESET "\x1B[0m"
-
-extern void print_dataset(double *array, uint32_t row, uint32_t col);
-extern void print_dataset_yav(double *array, uint32_t row, uint32_t col);
-extern void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
-extern double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
 
 knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
@@ -52,7 +37,6 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         MALLOC(double, ret_master.ndist, n*k);
         MALLOC(uint32_t, ret_master.nidx, n*k);
 
-
         //srand(time(NULL));
         srand(1);
         printf("n = %u, d = %u, k = %u\n", n, d, k);
@@ -74,21 +58,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     int size_per_proc[numtasks]; 
     int memory_offset[numtasks]; 
-    int remain = n%numtasks;
-    for (int i = 0; i < numtasks; i++) {
-        memory_offset[i] = 0;
-
-        size_per_proc[i] = n/numtasks * d;
-
-        // the remaining n share them like a deck of cards (better load balance)
-        if (remain) {
-            size_per_proc[i] += d;
-            remain--;
-        }
-
-        if(i!= 0) memory_offset[i] = memory_offset[i-1] + size_per_proc[i-1];
-    }
-
+    memdistr(n, d, numtasks, size_per_proc, memory_offset);
 
     /* if (rank == MASTER){ */
     /* printf("The size per process\n"); */
@@ -100,32 +70,15 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     double *init_buffer;
     MALLOC(double, init_buffer, size_per_proc[rank]);
-
     MPI_Scatterv(x, size_per_proc, memory_offset, MPI_DOUBLE, init_buffer, size_per_proc[rank], MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
 
     /* printf("\nRank %d got %d points from corpus\n", rank, size_per_proc[rank]/d); */
     /* print_dataset_yav(init_buffer, size_per_proc[rank]/d, d); */
     /* printf("\n"); */
 
-
-
     int size_per_proc_final[numtasks];
     int memory_offset_final[numtasks];
-    int remain_final = n%numtasks;
-
-    for (int i = 0; i < numtasks; i++) {
-        memory_offset_final[i] = 0;
-
-        size_per_proc_final[i] = n/numtasks * k;
-
-        // the remaining n share them like a deck of cards (better load balance)
-        if (remain_final) {
-            size_per_proc_final[i] += k;
-            remain_final--;
-        }
-
-        if(i!= 0) memory_offset_final[i] = memory_offset_final[i-1] + size_per_proc_final[i-1];
-    }
+    memdistr(n, k, numtasks, size_per_proc_final, memory_offset_final);
 
     /* if (rank == MASTER){ */
     /* printf("\nThe size per process\n"); */
@@ -139,9 +92,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     double *curr_buffer;
     double *new_buffer;
     int local_n_curr = 0;
-
     int m_per_process = size_per_proc[rank]/d;
-
     knnresult ret_curr;
 
     knnresult ret_per_process;
@@ -157,12 +108,12 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     MPI_Request req;
     MPI_Status stat;
 
-    TIC();
+    TIC()
 
     for (int i = 0; i < numtasks; i++) {
-        int isBlocked = 0;
+        int isSend = 0;
 
-        int grid = memory_offset[rank]/d;
+        int offset = memory_offset[rank]/d;
         local_n_curr = size_per_proc[rank]/d;
 
         // first time get data via scatterv
@@ -181,19 +132,10 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         // one step ahead. Calculate the next buffer to avoid communication cost
         if (i <= numtasks-2) {
 
-            // non blocking scatterv
             // cycle through the size per proc to fill the distance matrix
 
-            // shift size_per_proc and memory_offset
-            // rotate left
-            double temp1 = size_per_proc[0];
-            double temp2 = memory_offset[0];
-            for (int k = 0; k < numtasks - 1; k++){        
-                size_per_proc[k] = size_per_proc[k+1];
-                memory_offset[k] = memory_offset[k+1];
-            }
-            size_per_proc[numtasks-1] = temp1;
-            memory_offset[numtasks-1] = temp2;
+            rotate_left(size_per_proc, numtasks);
+            rotate_left(memory_offset, numtasks);
 
             /* if (rank == MASTER){ */
             /*     printf("The size per process\n"); */
@@ -205,9 +147,9 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             /* printf("\n"); */
 
             MALLOC(double, new_buffer, size_per_proc[rank]);
-
             MPI_Iscatterv(x, size_per_proc, memory_offset, MPI_DOUBLE, new_buffer, size_per_proc[rank], MPI_DOUBLE, MASTER, MPI_COMM_WORLD, &req);
-            isBlocked = 1;
+
+            isSend = 1;
         }
 
 
@@ -218,13 +160,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         /* printf("\nIndeces of kNN ret curr before\n"); */
         /* print_indeces(ret_curr.nidx, ret_curr.m, k); */
 
-        // adjust indeces
-        int local_k = MIN(local_n_curr, k);
-        for(int j = 0; j < m_per_process; j++) {
-            for(int k = 0; k < local_k; k++) {
-                ret_curr.nidx[k + j*local_k] += grid; 
-            }
-        }
+        adjust_indeces(ret_curr.nidx, m_per_process, MIN(local_n_curr, k), offset);
 
         /* printf("\nDistance of kNN ret curr\n"); */
         /* print_dataset_yav(ret_curr.ndist, ret_curr.m, k); */
@@ -299,7 +235,11 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             free(ret_curr.nidx);
         }
 
-        if(isBlocked) MPI_Wait(&req, &stat);
+        if(isSend) {
+            //TIC()
+            MPI_Wait(&req, &stat);
+            //TOC(RED "Cost " RESET "for syncing: %lf\n")
+        }
 
         /* if(i <= numtasks-2) { */
         /*     printf("Rank: %d. The next buff is:\n", rank); */
@@ -309,6 +249,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     }
 
     free(init_buffer);
+    if(rank == MASTER) free(x);
 
     printf("\n");
 
@@ -318,16 +259,50 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     /* print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
 
     clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf("Rank: %d. Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
+    printf(CYN "Rank: %d. " RESET "Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
+
+    if(rank == MASTER) {TIC();}
 
     // Gather to root
     MPI_Gatherv(ret_per_process.ndist, size_per_proc_final[rank], MPI_DOUBLE, ret_master.ndist, size_per_proc_final, memory_offset_final, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
     MPI_Gatherv(ret_per_process.nidx, size_per_proc_final[rank], MPI_INT, ret_master.nidx, size_per_proc_final, memory_offset_final, MPI_INT, MASTER, MPI_COMM_WORLD);
 
+    if(rank == MASTER) {TOC(RED "\nCOST " RESET "Gatherv: %lf\n")}
+
     free(ret_per_process.ndist);
     free(ret_per_process.nidx);
-    if(rank == MASTER) free(x);
 
     return ret_master;
+}
+
+void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *memory_offset) {
+    int remain = n%numtasks;
+    for (int i = 0; i < numtasks; i++) {
+        memory_offset[i] = 0;
+
+        size_per_proc[i] = n/numtasks * d;
+
+        // the remaining n share them like a deck of cards (better load balance)
+        if (remain) {
+            size_per_proc[i] += d;
+            remain--;
+        }
+
+        if(i!= 0) memory_offset[i] = memory_offset[i-1] + size_per_proc[i-1];
+    }
+}
+
+void rotate_left(int *arr, int size) {
+    int temp = arr[0];
+    for(int i = 0; i < size-1; i++) arr[i] = arr[i+1];
+    arr[size-1] = temp;
+}
+
+void adjust_indeces(uint32_t *arr, uint32_t rows, uint32_t cols, int offset) {
+    for(uint32_t i = 0; i < rows; i++) {
+        for(uint32_t j = 0; j < cols; j++) {
+            arr[j + i*cols] += offset; 
+        }
+    }
 }
 

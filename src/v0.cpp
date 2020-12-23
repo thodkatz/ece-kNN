@@ -62,21 +62,6 @@
 #include <unordered_map>
 #endif
 
-#define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-
-extern void print_dataset(double *array, uint32_t row, uint32_t col);
-extern void print_dataset_yav(double *array, uint32_t row, uint32_t col);
-extern void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
-
-void transpose(double *src, double *dst, const uint32_t N, const uint32_t M);
-uint32_t partition(double arr[], uint32_t start, uint32_t end);
-int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k);
-double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
-double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
-double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
-double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
-
 knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k) {
 
     /* printf("Entering knn function, n: %d, m:%d\n", n, m); */
@@ -94,7 +79,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     struct timespec tic;
     struct timespec toc;
     
-    TIC();
+    TIC()
 #if MATRIX == 0
     double *distance = euclidean_distance_naive(x, y, n, d, m);
 #elif MATRIX == 1
@@ -102,7 +87,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 #elif MATRIX == 2
     double *distance = euclidean_distance_notrans(x, y, n, d, m);
 #endif
-    TOC("Time elapsed calculating distance matrix (seconds): %lf\n");
+    TOC("Time elapsed calculating distance matrix (seconds): %lf\n")
 
 #if MATRIX == 1
     /* printf("\nThe distance matrix n x m: \n"); */
@@ -116,7 +101,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 #if TRANS == 1
     double *distance_trans;
     if (n != m) {
-        TIC();
+        TIC()
 
         // create transpose to exploit cache hits 
         MALLOC(double, distance_trans, m*n);
@@ -128,7 +113,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 
         free(distance);
 
-        TOC("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n");
+        TOC("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n")
 
         /* printf("\nThe transpose distance matrix m x n: \n"); */
         /* print_dataset_yav(distance_trans, m, n); */
@@ -139,38 +124,38 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     int isFirst = 1; // indeces 1 or 0 based?
     printf("Sorting distance matrix until %uth element...\n", k);
 
-    TIC();
+    TIC()
 
     for(uint32_t i = 0; i < m; i++) {
 #if TRANS == 1
-        double *mth_array = distance_trans + i*n; 
+        double *distance_per_row = distance_trans + i*n; 
 #elif TRANS == 0
-        double *mth_array; 
+        double *distance_per_row; 
 #if MATRIX == 1
-        MALLOC(double, mth_array, n);
-        for(uint32_t j = 0; j < n; j++) mth_array[j] = distance[i + j*m];
+        MALLOC(double, distance_per_row, n);
+        for(uint32_t j = 0; j < n; j++) distance_per_row[j] = distance[i + j*m];
 #elif MATRIX == 0 || MATRIX == 2
-        mth_array = distance + i*n;
+        distance_per_row = distance + i*n;
 #endif
 #endif
 
 #if CPP == 1 
         // map each distance value to the index of the corpus
         std::unordered_map<double, uint32_t> mth_map; 
-        for (uint32_t j=0; j < n; j++) mth_map[mth_array[j]] = j; // costs time
+        for (uint32_t j=0; j < n; j++) mth_map[distance_per_row[j]] = j; // costs time
 
         // find the k smallest
-        std::nth_element(mth_array, mth_array + k-1, mth_array + n);
-        //memcpy(ret.ndist + i*k, mth_array, sizeof(double)*k);
+        std::nth_element(distance_per_row, distance_per_row + k-1, distance_per_row + n);
+        //memcpy(ret.ndist + i*k, distance_per_row, sizeof(double)*k);
 
         for(uint32_t j = 0; j < k; j++) {
-            ret.ndist[i*k + j] = mth_array[j]; 
+            ret.ndist[i*k + j] = distance_per_row[j]; 
 
-            //ret.nidx[i*k + j] = mth_map[mth_array[j]] + isFirst;
+            //ret.nidx[i*k + j] = mth_map[distance_per_row[j]] + isFirst;
             
             // in case there are duplicate distance values
-            auto range = mth_map.equal_range(mth_array[j]); 
-            auto count = mth_map.count(mth_array[j]);
+            auto range = mth_map.equal_range(distance_per_row[j]); 
+            auto count = mth_map.count(distance_per_row[j]);
             for (auto it = range.first; it != range.second; it++) {
                 ret.nidx[i*k + j] = it->second + isFirst;
                 if(count-- != 1) {
@@ -181,25 +166,25 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
         } 
 
 #elif CPP == 0 
-        uint32_t *mth_indeces;
-        MALLOC(uint32_t, mth_indeces, n);
-        for(uint32_t j = 0; j < n; j ++) mth_indeces[j] = j + isFirst;
+        uint32_t *indeces_per_row;
+        MALLOC(uint32_t, indeces_per_row, n);
+        for(uint32_t j = 0; j < n; j ++) indeces_per_row[j] = j + isFirst;
 
         if(n>k) {
-            qselect(mth_array, mth_indeces, n, k-1);
-            memcpy(ret.ndist + i*k, mth_array, sizeof(double) * k);
-            memcpy(ret.nidx + i*k, mth_indeces, sizeof(uint32_t) * k);
+            qselect(distance_per_row, indeces_per_row, n, k-1);
+            memcpy(ret.ndist + i*k, distance_per_row, sizeof(double) * k);
+            memcpy(ret.nidx + i*k, indeces_per_row, sizeof(uint32_t) * k);
         }
         else {  
-            memcpy(ret.ndist + i*n, mth_array, sizeof(double) * n);
-            memcpy(ret.nidx + i*n, mth_indeces, sizeof(uint32_t) * n);
+            memcpy(ret.ndist + i*n, distance_per_row, sizeof(double) * n);
+            memcpy(ret.nidx + i*n, indeces_per_row, sizeof(uint32_t) * n);
         }
 
-        free(mth_indeces);
+        free(indeces_per_row);
 #endif
 
 #if TRANS == 0 && MATRIX == 1
-        free(mth_array);
+        free(distance_per_row);
 #endif
     }
 
@@ -209,7 +194,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     free(distance);
 #endif
 
-    TOC("Time elapsed calculating kNN given distance matrix (seconds): %lf\n");
+    TOC("Time elapsed calculating kNN given distance matrix (seconds): %lf\n")
 
     /* if (k>n) k = n; */
     /* printf("\nDistance of kNN\n"); */
@@ -227,7 +212,7 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
     struct timespec tic;
     struct timespec toc;
 
-    TIC();
+    //TIC()
 
     // d1 = sum(X.^2,2)
     double *d1;
@@ -257,7 +242,7 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
     for (uint32_t i = 0; i < m; i++) d2[i] = cblas_ddot(d, y + i*d, 1, y + i*d, 1);
 #endif
 
-    TOC("Time elapsed calculating dot product (seconds): %lf\n");
+    //TOC("Time elapsed calculating dot product (seconds): %lf\n")
 
     // D = -2 * X * Y.'
     double *distance;
@@ -284,7 +269,7 @@ double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d,
     struct timespec tic;
     struct timespec toc;
 
-    TIC();
+    //TIC()
 
     // d1 = sum(X.^2,2)
     double *d1;
@@ -314,7 +299,7 @@ double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d,
     for (uint32_t i = 0; i < m; i++) d2[i] = cblas_ddot(d, y + i*d, 1, y + i*d, 1);
 #endif
 
-    TOC("Time elapsed calculating dot product (seconds): %lf\n");
+    //TOC("Time elapsed calculating dot product (seconds): %lf\n")
 
     // D = -2 * Y * X.'
     double *distance;
@@ -364,8 +349,6 @@ void transpose(double *src, double *dst, const uint32_t N, const uint32_t M) {
     }
 }
 
-// source gfg
-// fix me: median of 3
 uint32_t partition(double arr[], uint32_t start, uint32_t end) { 
     int x = arr[end],
     i = start; 
@@ -386,7 +369,6 @@ uint32_t partition(double arr[], uint32_t start, uint32_t end) {
     return i; 
 } 
 
-// source gfg
 int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k) { 
     if (k > 0 && k <= end - start + 1) { 
   
@@ -405,7 +387,6 @@ int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k) {
 } 
 
 
-// rosetta code wiki modified
 double qselect(double *v, uint32_t *idx, int64_t len, int64_t k) {
 #define SWAPval(a, b) { tmp1 = v[a]; v[a] = v[b]; v[b] = tmp1; }
 #define SWAPidx(a, b) { tmp2 = idx[a]; idx[a] = idx[b]; idx[b] = tmp2; }

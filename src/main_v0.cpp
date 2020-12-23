@@ -7,11 +7,6 @@
 #include <math.h>
 #include <string.h>
 
-double diff_time (struct timespec start, struct timespec end);
-void print_dataset(double *array, uint32_t row, uint32_t col);
-void print_dataset_yav(double *array, uint32_t row, uint32_t col);
-void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
-
 #define BLOCKS 1
 
 int main(int argc, char *argv[])
@@ -64,19 +59,19 @@ int main(int argc, char *argv[])
     uint32_t blocks = BLOCKS;
     if (blocks == 0) blocks = 1;
     printf("Blocking the query into %d blocks\n", blocks);
-    uint32_t block_size = ceil(m/(float)blocks); // use ceil for better load distribution
+    uint32_t block_size = m/blocks; 
     printf("Each block has %u points\n", block_size);
 
     struct timespec tic;
     struct timespec toc;
 
-    TIC();
+    TIC()
 
     // for each block (subset of query set) calculate the kNN and then merge the results
     for (uint32_t curr = 0; curr < blocks; curr++) {
         uint32_t start = curr*block_size;
         uint32_t end = start + block_size;
-        if (curr == blocks-1) end = m;
+        if (curr == blocks-1) end = m; // FIX not good load balance. The remaining should be given like a deck of cards
         printf("\nRange for %uth iteration: [%u, %u]\n", curr, start, end);
         printf("Random generated query...\n");
 
@@ -100,7 +95,7 @@ int main(int argc, char *argv[])
     free(ret_blocked.nidx);
     }
 
-    TOC("\nTime elapsed calculating kNN total (seconds): %lf\n");
+    TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
     if(k>n) k = n;
     printf("\nDistance of kNN\n");

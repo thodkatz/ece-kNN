@@ -3,19 +3,21 @@ CCMPI=mpic++
 CFLAGS= -g -pedantic -Wall
 LDFLAGS= -lopenblas
 
-DIR = bin/
-SRC_v0 = main_v0.cpp diff_time.cpp mm2coo.c mmio.c v0.cpp
-SRC_v1 = main_v1.cpp diff_time.cpp mm2coo.c mmio.c v0.cpp v1.cpp
+BIN = bin/
+BASE = diff_time.cpp mm2coo.c mmio.c v0.cpp
+v0 = $(BASE) main_v0.cpp
+v1 = $(BASE) main_v1.cpp v1.cpp
 
 all: v0 v1
 	
-v0: $(SRC_v0)
-	$(CC) $(CFLAGS) $(SRC_v0) -o $(DIR)$@ $(LDFLAGS)
+v0: $(v0)
+	$(CC) $(CFLAGS) $(v0) -o $(BIN)$@ $(LDFLAGS)
 
-v1: $(SRC_v1)
-	$(CCMPI) $(CFLAGS) $(SRC_v1) -o $(DIR)$@ $(LDFLAGS)
+v1: $(v1)
+	$(CCMPI) $(CFLAGS) $(v1) -o $(BIN)$@ $(LDFLAGS)
 
 .PHONY: clean
 
 clean:
-	rm -f v0 v1
+	rm -f bin/*
+
