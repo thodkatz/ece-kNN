@@ -3,11 +3,17 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdlib.h>
-#include "include/main.h"
+#include "main.h"
 #include <math.h>
 #include <string.h>
 
 #define BLOCKS 1
+
+/*
+ * 0 --> query subset of corpus 
+ * 1 --> distrAll
+ */
+#define ALL 0
 
 int main(int argc, char *argv[])
 {
@@ -28,10 +34,11 @@ int main(int argc, char *argv[])
     }
     if (k > n) {
         printf("Number of nearest elements exceeded the number of elements in the corpus set\n");
-        //return -1;
+        //return -1; // should work for that case too
     }
-
+#if ALL == 1
     m = n; // symmetric
+#endif
 
     //srand(time(NULL));
     srand(1);
@@ -74,20 +81,25 @@ int main(int argc, char *argv[])
         if (curr == blocks-1) end = m; // FIX not good load balance. The remaining should be given like a deck of cards
         printf("\nRange for %uth iteration: [%u, %u]\n", curr, start, end);
         printf("Random generated query...\n");
-
+#if ALL == 0
         for (uint32_t i = start; i< end; i++) {
             uint32_t random = rand()%n; // there are duplicate indexes
             for (uint32_t j = 0; j < d; j ++) {
                 y[i*d + j] = x[random*d + j];
             }
         }
+#endif
     
     /* print_dataset(x, n, d); */
     /* printf("\n"); */
     /* print_dataset_yav(y + start*d, end-start, d); */
     
     knnresult ret_blocked;
+#if ALL == 0
+    ret_blocked = kNN(x, y + start*d, n, end-start, d, k);
+#elif ALL == 1
     ret_blocked = kNN(x, x + start*d, n, end-start, d, k);
+#endif
     memcpy(ret.ndist + start*k, ret_blocked.ndist, sizeof(double) * k * (end - start));
     memcpy(ret.nidx + start*k, ret_blocked.nidx, sizeof(uint32_t) * k * (end - start));
 
@@ -97,15 +109,16 @@ int main(int argc, char *argv[])
 
     TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
-    if(k>n) k = n;
-    printf("\nDistance of kNN\n");
-    print_dataset_yav(ret.ndist, m, k);
-    printf("\nIndeces of kNN\n");
-    print_indeces(ret.nidx, m, k);
+    /* printf("\nDistance of kNN\n"); */
+    /* print_dataset_yav(ret.ndist, m, k); */
+    /* printf("\nIndeces of kNN\n"); */
+    /* print_indeces(ret.nidx, m, k); */
 
 
     free(x);
+#if ALL == 0
     free(y);
+#endif
     free(ret.nidx);
     free(ret.ndist);
 

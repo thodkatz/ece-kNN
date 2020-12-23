@@ -17,7 +17,6 @@ void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *mem
  */
 void rotate_left(int *arr, int size);
 
-
 /*
  * \brief For a given matrix divided to parts, for each part adjust the indeces as viewed by the total matrix
  */

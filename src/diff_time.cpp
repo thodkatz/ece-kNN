@@ -2,7 +2,6 @@
 #include <stdint.h>
 #include <stdio.h>
 
-
 double diff_time (struct timespec start, struct timespec end) {
     uint32_t diff_sec = (end.tv_sec - start.tv_sec);
     int32_t diff_nsec = (end.tv_nsec - start.tv_nsec);

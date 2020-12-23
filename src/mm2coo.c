@@ -1,5 +1,5 @@
-#include "include/main.h"
-#include "include/mmio.h"
+#include "main.h"
+#include "mmio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

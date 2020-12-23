@@ -4,7 +4,7 @@
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include "include/main.h"
+#include "main.h"
 
 
 /*
@@ -138,38 +138,43 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
         distance_per_row = distance + i*n;
 #endif
 #endif
-
-#if CPP == 1 
-        // map each distance value to the index of the corpus
-        std::unordered_map<double, uint32_t> mth_map; 
-        for (uint32_t j=0; j < n; j++) mth_map[distance_per_row[j]] = j; // costs time
-
-        // find the k smallest
-        std::nth_element(distance_per_row, distance_per_row + k-1, distance_per_row + n);
-        //memcpy(ret.ndist + i*k, distance_per_row, sizeof(double)*k);
-
-        for(uint32_t j = 0; j < k; j++) {
-            ret.ndist[i*k + j] = distance_per_row[j]; 
-
-            //ret.nidx[i*k + j] = mth_map[distance_per_row[j]] + isFirst;
-            
-            // in case there are duplicate distance values
-            auto range = mth_map.equal_range(distance_per_row[j]); 
-            auto count = mth_map.count(distance_per_row[j]);
-            for (auto it = range.first; it != range.second; it++) {
-                ret.nidx[i*k + j] = it->second + isFirst;
-                if(count-- != 1) {
-                    if (j < k) j++; 
-                    else break;
-                }
-            }
-        } 
-
-#elif CPP == 0 
         uint32_t *indeces_per_row;
         MALLOC(uint32_t, indeces_per_row, n);
         for(uint32_t j = 0; j < n; j ++) indeces_per_row[j] = j + isFirst;
 
+#if CPP == 1 
+        if(n>k) {
+            // map each distance value to the index of the corpus
+            std::unordered_map<double, uint32_t> mth_map; 
+            for (uint32_t j=0; j < n; j++) mth_map[distance_per_row[j]] = j; // costs time
+
+            // find the k smallest
+            std::nth_element(distance_per_row, distance_per_row + k-1, distance_per_row + n);
+            //memcpy(ret.ndist + i*k, distance_per_row, sizeof(double)*k);
+
+            for(uint32_t j = 0; j < k; j++) {
+                ret.ndist[i*k + j] = distance_per_row[j]; 
+
+                ret.nidx[i*k + j] = mth_map[distance_per_row[j]] + isFirst;
+
+                // in case there are duplicate distance values
+                auto range = mth_map.equal_range(distance_per_row[j]); 
+                auto count = mth_map.count(distance_per_row[j]);
+                for (auto it = range.first; it != range.second; it++) {
+                    ret.nidx[i*k + j] = it->second + isFirst;
+                    if(count-- != 1) {
+                        if (j < k) j++; 
+                        else break;
+                    }
+                }
+            } 
+        }
+        else {
+            memcpy(ret.ndist + i*n, distance_per_row, sizeof(double) * n);
+            memcpy(ret.nidx + i*n, indeces_per_row, sizeof(uint32_t) * n);
+        }
+
+#elif CPP == 0 
         if(n>k) {
             qselect(distance_per_row, indeces_per_row, n, k-1);
             memcpy(ret.ndist + i*k, distance_per_row, sizeof(double) * k);
@@ -265,7 +270,7 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
 
 // D' = sqrt(sum(X.^2,2).' - 2 * Y * X.' + sum(Y.^2, 2))
 double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
-    printf("Calculating distance matrix mxn approach\n");
+    printf("Calculating distance matrix mxn approach [%u, %u]\n", m, n);
     struct timespec tic;
     struct timespec toc;
 
