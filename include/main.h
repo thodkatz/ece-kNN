@@ -2,6 +2,7 @@
 #define MAIN_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define MALLOC(type, x, len) if((x = (type*)malloc(len * sizeof(type))) == NULL) \
                                 {printf("Bad alloc\n"); exit(1);}
@@ -132,6 +133,8 @@ void print_dataset(double *array, uint32_t row, uint32_t col);
  */
 void print_dataset_yav(double *array, uint32_t row, uint32_t col);
 // void print_dataset_comma
+
+void print_dataset_yav_range(double *array, uint32_t low, uint32_t high, uint32_t col);
 
 /*
  * \brief Print 2d array using comma separated values format

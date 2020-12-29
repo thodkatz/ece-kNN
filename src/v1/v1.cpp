@@ -52,8 +52,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             }
         }
 
-        /* printf("\nThe corpus set: \n"); */
-        /* print_dataset_yav(x, n, d); */        
+        printf("\nThe corpus set: \n");
+        print_dataset_yav(x, n, d);        
     }
 
     int corpus_per_proc[numtasks]; 
