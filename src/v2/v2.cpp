@@ -101,8 +101,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     knnresult ret_per_process;
     ret_per_process.m = m_per_process;
-    MALLOC(double, ret_per_process.ndist, m_per_process * k);
-    MALLOC(uint32_t, ret_per_process.nidx, m_per_process * k);
+    MALLOC(double, ret_per_process.ndist, m_per_process * MIN(m_per_process, k));
+    MALLOC(uint32_t, ret_per_process.nidx, m_per_process * MIN(m_per_process, k));
 
     // create a local vp tree per process
     int num_nodes_balanced_per_proc[numtasks];

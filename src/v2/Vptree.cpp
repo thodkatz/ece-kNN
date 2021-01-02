@@ -81,12 +81,12 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
 
     // init each node of the vptree
     MALLOC(double, vp_mu, _num_nodes_balanced);
-    MALLOC(double, vp_coords, _num_nodes_balanced * dimensions);
+    MALLOC(double, vp_coords, _num_nodes_balanced * _dimensions);
     MALLOC(int, vp_index, _num_nodes_balanced);
     for(int i = 0; i < _num_nodes_balanced; i++) {
         vp_mu[i] = FLAG_NO_LEAF;
         vp_index[i] = FLAG_NO_LEAF;
-        for(int j = 0; j < dimensions; j++) vp_coords[i*_num_nodes_balanced + j] = 0;
+        for(int j = 0; j < _dimensions; j++) vp_coords[i*_dimensions+ j] = 0;
     }
 
     Vptree::makeTree(0, n, 0);
@@ -270,7 +270,7 @@ void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) 
     searchTree(1,0);
 
     int isFirst = 1;
-    uint32_t count = k-1;
+    int count = k-1;
     while (!heap.empty()) {
         dist[count] = heap.top().first;
         idx[count] = heap.top().second + isFirst;
@@ -289,11 +289,11 @@ double *Vptree::point_with_corpus(double *query, int low, int high) {
     int points = high - low;
     double *distance;
     MALLOC(double, distance, points);
-    uint32_t count = 0;
+    int count = 0;
 
-    for(uint32_t j = low; j < high; j++) {
+    for(int j = low; j < high; j++) {
         double temp = 0;
-        for (uint32_t k = 0; k < _dimensions; k++) {
+        for (int k = 0; k < _dimensions; k++) {
             temp += (_corpus[j*_dimensions + k] - query[k]) * (_corpus[j*_dimensions + k] - query[k]);
         }
         distance[count] = sqrt(temp);
