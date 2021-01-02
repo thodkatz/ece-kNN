@@ -13,7 +13,7 @@
  * 0 --> query subset of corpus 
  * 1 --> distrAll
  */
-#define ALL 0
+#define ALL 1
 
 int main(int argc, char *argv[])
 {
@@ -55,6 +55,8 @@ int main(int argc, char *argv[])
             x[i*d + j] = (double)(rand()%100);
         }
     }
+
+    print_dataset_yav(x, n, d);
 
     knnresult ret;
     ret.k = k;
@@ -109,10 +111,10 @@ int main(int argc, char *argv[])
 
     TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
-    /* printf("\nDistance of kNN\n"); */
-    /* print_dataset_yav(ret.ndist, m, k); */
-    /* printf("\nIndeces of kNN\n"); */
-    /* print_indeces(ret.nidx, m, k); */
+    printf("\nDistance of kNN\n");
+    print_dataset_yav(ret.ndist, m, k);
+    printf("\nIndeces of kNN\n");
+    print_indeces(ret.nidx, m, k);
 
 
     free(x);

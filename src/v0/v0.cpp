@@ -93,8 +93,8 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     /* printf("\nThe distance matrix n x m: \n"); */
     /* print_dataset_yav(distance, n, m); */
 #elif MATRIX == 2
-    /* printf("\nThe distance matrix m x n: \n"); */
-    /* print_dataset_yav(distance, m, n); */
+    printf("\nThe distance matrix m x n: \n");
+    print_dataset_yav(distance, m, n);
 #endif
 
 

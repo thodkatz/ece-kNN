@@ -18,13 +18,11 @@
 #define CBLAS_DDOT 0
 
 // assume that kNN including itself 
-knnresult kNN_vptree(double *x, Vptree &vpt, uint32_t n, uint32_t m, uint32_t d, uint32_t k) {
+knnresult kNN_vptree(Vptree &vpt, double *y, int n, uint32_t m, uint32_t d, uint32_t k) {
 
-    /* printf("Entering knn function, n: %d, m:%d\n", n, m); */
-    /* printf("The x is \n"); */
-    /* print_dataset_yav(x, n, d); */
-    /* printf("The y is \n"); */
-    /* print_dataset_yav(y, m, d); */
+    printf("Entering knn function, m:%d\n", m);
+    printf("The y is \n");
+    print_dataset_yav(y, m, d);
 
     knnresult ret;
     MALLOC(double, ret.ndist, m*MIN(k, n));
@@ -38,14 +36,17 @@ knnresult kNN_vptree(double *x, Vptree &vpt, uint32_t n, uint32_t m, uint32_t d,
     TIC()
 
     // search vp tree
-    for(uint32_t i = 0; i < n; i++) {
+    for(uint32_t i = 0; i < m; i++) {
         double *target;
-        MALLOC(double, target, sizeof(double)*d);
-        memcpy(target, x + i*d, sizeof(double)*d);
+        MALLOC(double, target, d);
+        memcpy(target, y + i*d, sizeof(double) * d);
         vpt.searchKNN(ret.ndist + MIN(k,n)*i, ret.nidx + MIN(k,n)*i, target, MIN(n,k));
         free(target);
+        printf("\nDistance of kNN\n");
+        print_dataset_yav(ret.ndist + MIN(k,n)*i, 1, k);
+        printf("\nIndeces of kNN\n");
+        print_indeces(ret.nidx + MIN(k,n)*i, 1, k);
     }
-    
 
     TOC("Time elapsed calculating kNN vp-tree (seconds): %lf\n")
     return ret;
