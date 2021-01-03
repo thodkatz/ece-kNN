@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-    uint32_t n = (uint32_t)20;
+    uint32_t n = (uint32_t)200;
     uint32_t d = 4;
     uint32_t k = 3;
 
@@ -28,6 +28,8 @@ int main(int argc, char *argv[])
 
     struct timespec tic;
     struct timespec toc;
+
+    FILE *log;
 
     TIC()
 
@@ -38,10 +40,14 @@ int main(int argc, char *argv[])
 
         TOC(RED "\nTOTAL: " RESET "Time elapsed calculating kNN (seconds): %lf\n")
 
-        printf("\nDistance of kNN\n");
-        print_dataset_yav(ret.ndist, ret.m, k);
-        printf("\nIndeces of kNN\n");
-        print_indeces(ret.nidx, ret.m, k);
+        /* printf("\nDistance of kNN\n"); */
+        /* print_dataset_yav(ret.ndist, ret.m, k); */
+        /* printf("\nIndeces of kNN\n"); */
+        /* print_indeces(ret.nidx, ret.m, k); */
+
+        log = fopen("v2_log(2).txt", "w");
+        print_output_file(log, ret.ndist, ret.nidx, ret.m, k);
+        fclose(log);
 
         free(ret.nidx);
         free(ret.ndist);
@@ -117,5 +123,38 @@ void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
             printf("]]\n");
         else
             printf("],\n");
+    }
+}
+
+void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col) {
+    for (uint32_t i = 0; i < row; i++)
+    {
+        if (i == 0)
+            fprintf(f, "[[");
+        else
+            fprintf(f, " [");
+        for (uint32_t j = 0; j < col; j++)
+            if (j != col -1) fprintf(f, "%lf,", dist[i*col + j]);
+            else fprintf(f, "%lf", dist[i*col + j]);
+        if (i == row -1)
+            fprintf(f, "]]\n");
+        else
+            fprintf(f, "],\n");
+    }
+
+    for (uint32_t i = 0; i < row; i++)
+    {
+        if (i == 0)
+            fprintf(f, "[[");
+        else
+            fprintf(f, " [");
+        for (uint32_t j = 0; j < col; j++) {
+            if (j != col -1) fprintf(f, "%u,", indeces[i*col + j]);
+            else fprintf(f, "%u", indeces[i*col + j]);
+        }
+        if (i == row -1)
+            fprintf(f, "]]\n");
+        else
+            fprintf(f, "],\n");
     }
 }

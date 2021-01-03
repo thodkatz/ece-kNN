@@ -25,13 +25,13 @@ void Vptree::init_before_search(int n, int num_nodes_balanced, int height_tree, 
     this->vp_coords = vp_coords;
     this->vp_index = vp_index;
 
-    printf("Entering init before search\n");
-    print_dataset_yav(vp_mu, 1, _num_nodes_balanced);
-    print_dataset_yav(vp_coords, _num_nodes_balanced, _dimensions);
-    for(int j = 0; j < _num_nodes_balanced; j++) {
-        printf("%d ", vp_index[j]);
-    }
-    printf("\n");
+    /* printf("Entering init before search\n"); */
+    /* print_dataset_yav(vp_mu, 1, _num_nodes_balanced); */
+    /* print_dataset_yav(vp_coords, _num_nodes_balanced, _dimensions); */
+    /* for(int j = 0; j < _num_nodes_balanced; j++) { */
+    /*     printf("%d ", vp_index[j]); */
+    /* } */
+    /* printf("\n"); */
 
     /* assert(n>1); */
     /* height_tree = ceil(log(n-1)); // assume root = 0th height */
@@ -90,24 +90,24 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
 
     Vptree::makeTree(0, n, 0);
 
-    printf("Final indeces and corpus\n");
-    print_dataset_yav(_corpus, n, _dimensions);
-    printf("\n");
-    for(uint32_t i = 0; i < n; i++) {
-        printf("%d ", _indeces[i]);
-    }
-    printf("\n\n");
+    /* printf("Final indeces and corpus\n"); */
+    /* print_dataset_yav(_corpus, n, _dimensions); */
+    /* printf("\n"); */
+    /* for(uint32_t i = 0; i < n; i++) { */
+    /*     printf("%d ", _indeces[i]); */
+    /* } */
+    /* printf("\n\n"); */
 
-    printf("Final indeces and corpus serialized tree\n");
-    print_dataset_yav(vp_coords, _num_nodes_balanced, _dimensions);
-    printf("\n");
-    for(int i = 0; i < _num_nodes_balanced; i++) {
-        printf("%d ", vp_index[i]);
-    }
-    printf("\n");
+    /* printf("Final indeces and corpus serialized tree\n"); */
+    /* print_dataset_yav(vp_coords, _num_nodes_balanced, _dimensions); */
+    /* printf("\n"); */
+    /* for(int i = 0; i < _num_nodes_balanced; i++) { */
+    /*     printf("%d ", vp_index[i]); */
+    /* } */
+    /* printf("\n"); */
 
-    printf("Final radius\n");
-    print_dataset_yav(vp_mu, 1, _num_nodes_balanced);
+    /* printf("Final radius\n"); */
+    /* print_dataset_yav(vp_mu, 1, _num_nodes_balanced); */
 }
 
 void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
@@ -136,7 +136,7 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
     if(points_corpus == 1) {
         /* printf("We have a leaf!!\n"); */
         memcpy(vp_coords + index_node*_dimensions, _corpus + low*_dimensions, sizeof(double)*_dimensions);
-        print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions);
+        /* print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions); */
         //vp->index = low;
         //NodeData.second = low;
         vp_index[index_node] = _indeces[low];
@@ -161,7 +161,7 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
     /* printf("Swapping distance\n"); */
     if(points_corpus < 0) {printf("Negative corpus points\n"); exit(1);}
     /* print_dataset_yav_range(_corpus, low, high, _dimensions); */
-    printf("\n");
+    /* printf("\n"); */
     memcpy(vp_coords + index_node*_dimensions, _corpus + low*_dimensions, sizeof(double) * _dimensions);
     /* print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions); */
     /* printf("\n"); */
@@ -182,8 +182,8 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
 
     double *dist;
     dist = Vptree::point_with_corpus(vp_coords + index_node*_dimensions, low, high);
-    print_dataset_yav(dist, 1, points_corpus);
-    printf("\n");
+    /* print_dataset_yav(dist, 1, points_corpus); */
+    /* printf("\n"); */
 
     points_corpus--;
     uint32_t median = (points_corpus)/2; 
@@ -238,7 +238,7 @@ void Vptree::searchTree(int height, int index_node) {
 
         if (heap.size() == _k) _tau = heap.top().first;
     }
-    printf("The index %d, the furthest distance %f, the dist %f and the radius of the vp %f\n", vp_index[index_node], _tau, dist, vp_mu[index_node]);
+    /* printf("The index %d, the furthest distance %f, the dist %f and the radius of the vp %f\n", vp_index[index_node], _tau, dist, vp_mu[index_node]); */
 
     _count_nodes++;
     /* printf("The count is %d\n", _count_nodes); */
@@ -260,8 +260,8 @@ void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) 
     _k = MIN(_n, k);
     _target = target; // 1xd
 
-    printf("Target\n");
-    print_dataset_yav(_target, 1 ,_dimensions);
+    /* printf("Target\n"); */
+    /* print_dataset_yav(_target, 1 ,_dimensions); */
 
     /* for(auto i = 0; i < _num_nodes_balanced; i++) { */
     /*     printf("%d node\n", i); */

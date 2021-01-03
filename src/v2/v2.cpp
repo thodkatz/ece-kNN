@@ -63,8 +63,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             }
         }
 
-        printf("\nThe corpus set: \n");
-        print_dataset_yav(x, n, d);        
+        /* printf("\nThe corpus set: \n"); */
+        /* print_dataset_yav(x, n, d); */        
     }
 
     int corpus_size_per_proc[numtasks]; 
@@ -84,9 +84,9 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     MPI_Scatterv(x, corpus_size_per_proc, distance_offset, MPI_DOUBLE, init_buffer, corpus_size_per_proc[rank], MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
     if(rank == MASTER) free(x);
 
-    printf("\nRank %d got %d points from corpus\n", rank, corpus_size_per_proc[rank]/d);
-    print_dataset_yav(init_buffer, corpus_size_per_proc[rank]/d, d);
-    printf("\n");
+    /* printf("\nRank %d got %d points from corpus\n", rank, corpus_size_per_proc[rank]/d); */
+    /* print_dataset_yav(init_buffer, corpus_size_per_proc[rank]/d, d); */
+    /* printf("\n"); */
 
     int kNN_per_proc[numtasks];
     int kNN_offset[numtasks];
@@ -371,15 +371,13 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     }
 
     free(init_buffer);
-
-    printf("\n");
-
-    printf("\nRank %d. Distance of kNN\n", rank);
-    print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k);
-    printf("\nRank %d. Indeces of kNN\n", rank);
-    print_indeces(ret_per_process.nidx, ret_per_process.m, k);
-
     clock_gettime(CLOCK_MONOTONIC, &toc);
+
+    /* printf("\nRank %d. Distance of kNN\n", rank); */
+    /* print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k); */
+    /* printf("\nRank %d. Indeces of kNN\n", rank); */
+    /* print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
+
     printf(CYN "Rank: %d. " RESET "Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
 
     if(rank == MASTER) {TIC();}

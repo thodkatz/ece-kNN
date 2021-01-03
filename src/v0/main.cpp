@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)20;
+    uint32_t n = (uint32_t)200;
     uint32_t d = 4;
     uint32_t m = 8;
     uint32_t k = 3;
@@ -56,7 +56,11 @@ int main(int argc, char *argv[])
         }
     }
 
-    print_dataset_yav(x, n, d);
+    FILE *input;
+    input = fopen("input(2).txt", "w");
+    print_input_file(input, x, n, d);
+    fclose(input);
+    /* print_dataset_yav(x, n, d); */
 
     knnresult ret;
     ret.k = k;
@@ -111,11 +115,20 @@ int main(int argc, char *argv[])
 
     TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
-    printf("\nDistance of kNN\n");
-    print_dataset_yav(ret.ndist, m, k);
-    printf("\nIndeces of kNN\n");
-    print_indeces(ret.nidx, m, k);
+    /* printf("\nDistance of kNN\n"); */
+    /* print_dataset_yav(ret.ndist, m, k); */
+    /* printf("\nIndeces of kNN\n"); */
+    /* print_indeces(ret.nidx, m, k); */
 
+    FILE *log;
+    log = fopen("v0_log(2).txt", "w");
+
+    // for comparing v1 and v2 sort the data
+    for(int i = 0; i < ret.m; i++) {
+        qselect(ret.ndist + i*k, ret.nidx + i*k, k, 0);
+    }
+    print_output_file(log, ret.ndist, ret.nidx, m, k);
+    fclose(log);
 
     free(x);
 #if ALL == 0
@@ -139,6 +152,19 @@ void print_dataset(double *array, uint32_t row, uint32_t col) {
     }
 }
 
+
+void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col) {
+    fprintf(f, "[ ");
+    for (uint32_t i = 0; i < row; i++) {
+        for (uint32_t j = 0; j < col; j++) {
+            fprintf(f, "%lf ", array[i*col + j]);
+        }
+        if (i != row-1) fprintf(f, "; ");
+        else fprintf(f, "]\n");
+    }
+
+}
+
 // print 2d array in python format (row wise)
 void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
     for (uint32_t i = 0; i < row; i++)
@@ -158,6 +184,7 @@ void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
 
 }
 
+
 void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
     for (uint32_t i = 0; i < row; i++)
     {
@@ -173,5 +200,38 @@ void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
             printf("]]\n");
         else
             printf("],\n");
+    }
+}
+
+void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col) {
+    for (uint32_t i = 0; i < row; i++)
+    {
+        if (i == 0)
+            fprintf(f, "[[");
+        else
+            fprintf(f, " [");
+        for (uint32_t j = 0; j < col; j++)
+            if (j != col -1) fprintf(f, "%lf,", dist[i*col + j]);
+            else fprintf(f, "%lf", dist[i*col + j]);
+        if (i == row -1)
+            fprintf(f, "]]\n");
+        else
+            fprintf(f, "],\n");
+    }
+
+    for (uint32_t i = 0; i < row; i++)
+    {
+        if (i == 0)
+            fprintf(f, "[[");
+        else
+            fprintf(f, " [");
+        for (uint32_t j = 0; j < col; j++) {
+            if (j != col -1) fprintf(f, "%u,", indeces[i*col + j]);
+            else fprintf(f, "%u", indeces[i*col + j]);
+        }
+        if (i == row -1)
+            fprintf(f, "]]\n");
+        else
+            fprintf(f, "],\n");
     }
 }

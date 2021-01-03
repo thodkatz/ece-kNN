@@ -14,7 +14,7 @@ SRC_v1 = $(BASE) $(DIR_v1)/*.cpp $(DIR_v0)/v0.cpp
 SRC_v2 = $(BASE) $(DIR_v2)/*.cpp
 INC = -I include
 
-all: v0 v1
+all: v0 v1 v2
 
 v0: $(SRC_v0)
 	$(CC) $(CFLAGS) $^ $(INC) -o $(BIN)/$@ $(LDFLAGS)

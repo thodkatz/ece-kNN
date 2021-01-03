@@ -148,4 +148,16 @@ void print_dataset_yav_range(double *array, uint32_t low, uint32_t high, uint32_
  */
 void print_indeces(uint32_t *array, uint32_t row, uint32_t col);
 
+/*
+ * Print to file the indeces and the distance matrix
+ *
+ */
+void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col);
+
+/*
+ * Print to file the input array
+ *
+ */
+void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col);
+
 #endif
