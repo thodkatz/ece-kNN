@@ -43,10 +43,8 @@ knnresult kNN_vptree(Vptree &vpt, double *y, int n, uint32_t m, uint32_t d, uint
         vpt.searchKNN(ret.ndist + MIN(k,n)*i, ret.nidx + MIN(k,n)*i, target, MIN(n,k));
         free(target);
 
-        printf("\nDistance of kNN\n");
-        print_dataset_yav(ret.ndist + m*i, 1, MIN(n,k));
-        printf("\nIndeces of kNN\n");
-        print_indeces(ret.nidx + m*i, 1, MIN(n,k));
+        print_dataset_yav(ret.ndist + MIN(n,k)*i, 1, MIN(n,k));
+        print_indeces(ret.nidx + MIN(n,k)*i, 1, MIN(n,k));
     }
 
     TOC("Time elapsed calculating kNN vp-tree (seconds): %lf\n")

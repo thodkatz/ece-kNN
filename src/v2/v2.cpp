@@ -27,13 +27,18 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         printf(CYN "==>" RESET " Total number of processes: %d\n", numtasks);
         printf(CYN "==>" RESET " VERSION 2\n");
 
-        if (k > n) {
+        if(k > n) {
             printf(RED "Error: " RESET "Number of nearest elements exceeded the number of elements in the corpus set\n");
             errc = -1;
             MPI_Abort(MPI_COMM_WORLD, errc);
         }
-        if (numtasks > n) {
+        if(numtasks > n) {
             printf(RED "Error: " RESET "Number of processes exceeded the number of elements in the corpus set\n");
+            errc = -1;
+            MPI_Abort(MPI_COMM_WORLD, errc);
+        }
+        if(numtasks > n/2) {
+            printf(RED "Error: " RESET "Each process should have at least two points\n");
             errc = -1;
             MPI_Abort(MPI_COMM_WORLD, errc);
         }
@@ -101,21 +106,24 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     knnresult ret_per_process;
     ret_per_process.m = m_per_process;
-    MALLOC(double, ret_per_process.ndist, m_per_process * MIN(m_per_process, k));
-    MALLOC(uint32_t, ret_per_process.nidx, m_per_process * MIN(m_per_process, k));
+    MALLOC(double, ret_per_process.ndist, m_per_process * k);
+    MALLOC(uint32_t, ret_per_process.nidx, m_per_process * k);
 
     // create a local vp tree per process
     int num_nodes_balanced_per_proc[numtasks];
     int height_tree[numtasks];
     for (int i = 0; i < numtasks; i++) {
         int corpus_points = corpus_size_per_proc[i]/d;
-        printf("Local corpus points %d\n", corpus_points);
-        assert(corpus_points>2);
+        if(rank == MASTER) printf("Local corpus points %d\n", corpus_points);
+        assert(corpus_points>1);
+
         // round up n to the next power of 2 finding the nodes of a balanced tree
-        height_tree[i] = ceil(LOG2(corpus_points-1)); // assume root: 1th height
+        float log2points = LOG2(corpus_points);
+        height_tree[i] = ceil(log2points); // assume root: 1th height
+        if(height_tree[i] == floor(log2points)) height_tree[i] += 1;
         num_nodes_balanced_per_proc[i] = pow(2, height_tree[i]) - 1;
-        printf("The height of the complete tree is %d (assume root is in the 1st height)\n", height_tree[i]);
-        printf("The total number of nodes for a balanced tree %d\n", num_nodes_balanced_per_proc[i]);
+        if(rank == MASTER) printf("The height of the complete tree is %d (assume root is in the 1st height)\n", height_tree[i]);
+        if(rank == MASTER) printf("The total number of nodes for a balanced tree %d\n", num_nodes_balanced_per_proc[i]);
     }
 
     uint32_t *indeces_per_process;
@@ -123,12 +131,14 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     printf("\n");
     for(uint32_t i = 0; i < m_per_process; i++) {
         indeces_per_process[i] = i;
-        printf("%d ", indeces_per_process[i]);
     }
+    int offset = distance_offset[rank]/d;
+    adjust_indeces(indeces_per_process, 1, m_per_process, offset);
+    print_indeces(indeces_per_process, 1, m_per_process);
     printf("\n");
     double *vpt_buffer;
     MALLOC(double, vpt_buffer, corpus_size_per_proc[rank]);
-    memcpy(vpt_buffer, init_buffer, sizeof(double) * m_per_process * d);
+    memcpy(vpt_buffer, init_buffer, sizeof(double) * corpus_size_per_proc[rank]);
 
     float target_height_tree_percent = 1.0;
     Vptree vpt(vpt_buffer, indeces_per_process, m_per_process, d, num_nodes_balanced_per_proc[rank], height_tree[rank], target_height_tree_percent);
@@ -165,25 +175,14 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     TIC()
 
-    for (int i = 0; i < numtasks; i++) {
+    for(int i = 0; i < numtasks; i++) {
         int isSend = 0;
 
         int offset = distance_offset[rank]/d;
         int local_n = corpus_size_per_proc[rank]/d;
         int local_num_nodes_balanced = num_nodes_balanced_per_proc[rank];
 
-        if (i == 0 && numtasks>1) {
-            MALLOC(double, send_vp_mu, local_num_nodes_balanced);
-            MALLOC(double, send_vp_coords, local_num_nodes_balanced * d);
-            MALLOC(int, send_vp_index, local_num_nodes_balanced);
-
-            // copy init to send
-            memcpy(send_vp_mu, vpt.vp_mu, sizeof(double) * local_num_nodes_balanced);
-            memcpy(send_vp_coords, vpt.vp_coords, sizeof(double) * local_num_nodes_balanced * d);
-            memcpy(send_vp_index, vpt.vp_index, sizeof(int) * local_num_nodes_balanced);
-        }
-        else if (i != 0){
-
+        if(i != 0) {
             MALLOC(double, vpt.vp_mu, local_num_nodes_balanced);
             MALLOC(double, vpt.vp_coords, local_num_nodes_balanced * d);
             MALLOC(int, vpt.vp_index, local_num_nodes_balanced);
@@ -193,30 +192,42 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             memcpy(vpt.vp_coords, recv_vp_coords, sizeof(double) * local_num_nodes_balanced * d);
             memcpy(vpt.vp_index, recv_vp_index, sizeof(int) * local_num_nodes_balanced);
 
+            /* printf("Receiving vp tree\n"); */
+            /* print_dataset_yav(vpt.vp_mu, 1, local_num_nodes_balanced); */
+            /* print_dataset_yav(vpt.vp_coords, local_num_nodes_balanced, d); */
+            /* for(int j = 0; j < local_num_nodes_balanced; j++) { */
+            /*     printf("%d ", vpt.vp_index[j]); */
+            /* } */
+            /* printf("\n"); */
+
+            /* printf("I am %d rank and I got %d nodes balanced \n", rank, local_num_nodes_balanced); */
+
             free(recv_vp_mu);
             free(recv_vp_coords);
             free(recv_vp_index);
 
             // init for search tree skipping the creation
             vpt.init_before_search(local_n, local_num_nodes_balanced, height_tree[rank], target_height_tree_percent, vpt.vp_mu, vpt.vp_coords, vpt.vp_index);
-
-            MALLOC(double, send_vp_mu, local_num_nodes_balanced);
-            MALLOC(double, send_vp_coords, local_num_nodes_balanced * d);
-            MALLOC(int, send_vp_index, local_num_nodes_balanced);
-
-            // copy receive to send
-            memcpy(send_vp_mu, vpt.vp_mu, sizeof(double) * local_num_nodes_balanced);
-            memcpy(send_vp_coords, vpt.vp_coords, sizeof(double) * local_num_nodes_balanced * d);
-            memcpy(send_vp_index, vpt.vp_index, sizeof(int) * local_num_nodes_balanced);
-
         }
 
         // one step ahead. Calculate the next buffer to avoid communication cost
         if (i <= numtasks-2) {
+            MALLOC(double, send_vp_mu, local_num_nodes_balanced);
+            MALLOC(double, send_vp_coords, local_num_nodes_balanced * d);
+            MALLOC(int, send_vp_index, local_num_nodes_balanced);
 
-            MALLOC(double, recv_vp_mu, local_num_nodes_balanced);
-            MALLOC(double, recv_vp_coords, local_num_nodes_balanced * d);
-            MALLOC(int, recv_vp_index, local_num_nodes_balanced);
+            // copy init to send
+            memcpy(send_vp_mu, vpt.vp_mu, sizeof(double) * local_num_nodes_balanced);
+            memcpy(send_vp_coords, vpt.vp_coords, sizeof(double) * local_num_nodes_balanced * d);
+            memcpy(send_vp_index, vpt.vp_index, sizeof(int) * local_num_nodes_balanced);
+
+            /* printf("Sending vp tree\n"); */
+            /* print_dataset_yav(vpt.vp_mu, 1, local_num_nodes_balanced); */
+            /* print_dataset_yav(vpt.vp_coords, local_num_nodes_balanced, d); */
+            /* for(int j = 0; j < local_num_nodes_balanced; j++) { */
+            /*     printf("%d ", vpt.vp_index[j]); */
+            /* } */
+            /* printf("\n"); */
 
             int prev = rank-1;
             int next = rank+1;
@@ -231,6 +242,14 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             rotate_left(num_nodes_balanced_per_proc, numtasks);
             rotate_left(height_tree, numtasks);
 
+            /* printf("I am %d rank and I will send %d nodes balanced to prev %d\n", rank, local_num_nodes_balanced, prev); */
+            local_num_nodes_balanced = num_nodes_balanced_per_proc[rank];
+            /* printf("I am %d rank and I will receive %d nodes balanced from next %d\n", rank, local_num_nodes_balanced, next); */
+
+            MALLOC(double, recv_vp_mu, local_num_nodes_balanced);
+            MALLOC(double, recv_vp_coords, local_num_nodes_balanced * d);
+            MALLOC(int, recv_vp_index, local_num_nodes_balanced);
+
             MPI_Irecv(recv_vp_mu, local_num_nodes_balanced, MPI_DOUBLE, next, tags[0], MPI_COMM_WORLD, &reqs[3]);
             MPI_Irecv(recv_vp_coords, local_num_nodes_balanced * d, MPI_DOUBLE, next, tags[1], MPI_COMM_WORLD, &reqs[4]);
             MPI_Irecv(recv_vp_index, local_num_nodes_balanced, MPI_INT, next, tags[2], MPI_COMM_WORLD, &reqs[5]);
@@ -239,20 +258,25 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         }
 
         ret_curr = kNN_vptree(vpt, init_buffer, local_n, m_per_process, d, k);
+        /* MALLOC(double, ret_curr.ndist, m_per_process * k); */
+        /* MALLOC(uint32_t, ret_curr.nidx, m_per_process * k); */
+        /* for(int j = 0; j < m_per_process * k; j++) { */
+        /*     ret_curr.ndist[j] = 0; */
+        /*     ret_curr.nidx[j] = 0; */
+        /* } */
         free(vpt.vp_mu);
         free(vpt.vp_coords);
         free(vpt.vp_index);
         printf("\n");
 
-        /* printf("\nIndeces of kNN ret curr before\n"); */
-        /* print_indeces(ret_curr.nidx, ret_curr.m, k); */
 
-        adjust_indeces(ret_curr.nidx, m_per_process, MIN(local_n, k), offset);
+        //adjust_indeces(ret_curr.nidx, m_per_process, MIN(local_n, k), offset);
 
         /* printf("\nDistance of kNN ret curr\n"); */
-        /* print_dataset_yav(ret_curr.ndist, ret_curr.m, k); */
+        /* print_dataset_yav(ret_curr.ndist, m_per_process, MIN(local_n, k)); */
+
         /* printf("\nIndeces of kNN ret curr after\n"); */
-        /* print_indeces(ret_curr.nidx, ret_curr.m, k); */
+        /* print_indeces(ret_curr.nidx, m_per_process, MIN(local_n, k)); */
 
         /* if (i != 0) { */
         /*     printf("\nDistance of kNN ret old\n"); */
@@ -310,14 +334,21 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
                 free(merged_distance);
                 free(merged_indeces);
+                /* printf("After freeing merged distances\n"); */
             }
-
             free(ret_curr.ndist);
             free(ret_curr.nidx);
         }
         else {
-            memcpy(ret_per_process.ndist, ret_curr.ndist, sizeof(double) * MIN(local_n, k) * m_per_process);
-            memcpy(ret_per_process.nidx, ret_curr.nidx, sizeof(uint32_t) * MIN(local_n, k) * m_per_process);
+            for (int j = 0; j < m_per_process; j++) {
+                memcpy(ret_per_process.ndist + j*k, ret_curr.ndist + j*MIN(local_n,k), sizeof(double) * MIN(local_n, k));
+                memcpy(ret_per_process.nidx + j*k, ret_curr.nidx + j*MIN(local_n, k), sizeof(uint32_t) * MIN(local_n, k));
+            }
+            /* printf("Firsttt Distance of kNN\n", rank); */
+            /* print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k); */
+            /* printf("First   Indeces of kNN\n", rank); */
+            /* print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
+
             free(ret_curr.ndist);
             free(ret_curr.nidx);
         }
@@ -325,6 +356,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         if(isSend) {
             //TIC()
             MPI_Waitall(6, reqs, stats);
+            /* printf("Freeing sending buffer...\n"); */
             free(send_vp_mu);
             free(send_vp_coords);
             free(send_vp_index);
@@ -353,14 +385,9 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     if(rank == MASTER) {TIC();}
 
     // Gather to root
-    if (numtasks > 1) {
-        MPI_Gatherv(ret_per_process.ndist, kNN_per_proc[rank], MPI_DOUBLE, ret_master.ndist, kNN_per_proc, kNN_offset, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
-        MPI_Gatherv(ret_per_process.nidx, kNN_per_proc[rank], MPI_INT, ret_master.nidx, kNN_per_proc, kNN_offset, MPI_INT, MASTER, MPI_COMM_WORLD);
-    }
-    else {
-        memcpy(ret_master.ndist, ret_per_process.ndist, sizeof(double) * n * MIN(n,k));
-        memcpy(ret_master.nidx, ret_per_process.nidx, sizeof(uint32_t) * n * MIN(n,k));
-    }
+    MPI_Gatherv(ret_per_process.ndist, kNN_per_proc[rank], MPI_DOUBLE, ret_master.ndist, kNN_per_proc, kNN_offset, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
+    MPI_Gatherv(ret_per_process.nidx, kNN_per_proc[rank], MPI_INT, ret_master.nidx, kNN_per_proc, kNN_offset, MPI_INT, MASTER, MPI_COMM_WORLD);
+
 
     if(rank == MASTER) {TOC(RED "\nCOST " RESET "Gatherv: %lf\n")}
 

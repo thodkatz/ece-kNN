@@ -228,8 +228,10 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             free(ret_curr.nidx);
         }
         else {
-            memcpy(ret_per_process.ndist, ret_curr.ndist, sizeof(double) * MIN(local_n, k) * m_per_process);
-            memcpy(ret_per_process.nidx, ret_curr.nidx, sizeof(uint32_t) * MIN(local_n, k) * m_per_process);
+            for (int j = 0; j < m_per_process; j++) {
+                memcpy(ret_per_process.ndist + j*k, ret_curr.ndist + j*MIN(local_n,k), sizeof(double) * MIN(local_n, k));
+                memcpy(ret_per_process.nidx + j*k, ret_curr.nidx + j*MIN(local_n, k), sizeof(uint32_t) * MIN(local_n, k));
+            }
             free(ret_curr.ndist);
             free(ret_curr.nidx);
         }

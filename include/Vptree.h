@@ -19,14 +19,15 @@ class Vptree {
     public:
 
         // Node of the Vptree
-        double   *vp_mu;         // Radius/median for every node
+        double   *vp_mu;       // Radius/median for every node
         double   *vp_coords;   // Coordinates of vantage point
         int      *vp_index;    // Index of vantage point that corresponds to the index of a point of the local corpus
 
     private:
-        int _height_tree;       // The height of the tree
+        int _height_tree;        // The height of the tree
         int _target_height_tree; // Don't create the whole tree. Stop until _targetHeightTree
         int _num_nodes_balanced; // The number of nodes of the tree created by the corpus points if it was balanced 
+        int _count_nodes;         // count how many nodes we visited. Should be less or equal of the total 
 
         uint32_t _dimensions;  // The number of dimensions of the metric space
         int      _n;
