@@ -222,7 +222,6 @@ void Vptree::searchTree(int height, int index_node) {
     double dist = Vptree::points_distance(_target, vp_coords + index_node*_dimensions);
 
     /* printf("The height is %d\n", height); */
-    printf("The index %d, the furthest distance %f, the dist %f and the radius of the vp %f\n", vp_index[index_node], _tau, dist, vp_mu[index_node]);
     /* printf("The vantage point coordinates\n"); */
     /* print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions); */
 
@@ -239,6 +238,7 @@ void Vptree::searchTree(int height, int index_node) {
 
         if (heap.size() == _k) _tau = heap.top().first;
     }
+    printf("The index %d, the furthest distance %f, the dist %f and the radius of the vp %f\n", vp_index[index_node], _tau, dist, vp_mu[index_node]);
 
     _count_nodes++;
     /* printf("The count is %d\n", _count_nodes); */
@@ -250,8 +250,8 @@ void Vptree::searchTree(int height, int index_node) {
     }
 
     height++;
-    if(dist + _tau > vp_mu[index_node]) searchTree(height, LEFT_CHILD(index_node)); 
-    if(dist - _tau < vp_mu[index_node]) searchTree(height, RIGHT_CHILD(index_node));
+    if(dist + _tau > vp_mu[index_node]) searchTree(height, RIGHT_CHILD(index_node)); 
+    if(dist - _tau < vp_mu[index_node]) searchTree(height, LEFT_CHILD(index_node));
 }
 
 void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) {

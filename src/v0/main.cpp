@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)1e1;
+    uint32_t n = (uint32_t)20;
     uint32_t d = 4;
     uint32_t m = 8;
     uint32_t k = 3;
