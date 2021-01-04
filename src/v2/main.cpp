@@ -19,9 +19,9 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-    uint32_t n = (uint32_t)2e4;
+    uint32_t n = (uint32_t)11;
     uint32_t d = 4;
-    uint32_t k = 5;
+    uint32_t k = 3;
 
     double *x;
     knnresult ret;
@@ -40,10 +40,10 @@ int main(int argc, char *argv[])
 
         TOC(RED "\nTOTAL: " RESET "Time elapsed calculating kNN (seconds): %lf\n")
 
-        /* printf("\nDistance of kNN\n"); */
-        /* print_dataset_yav(ret.ndist, ret.m, k); */
-        /* printf("\nIndeces of kNN\n"); */
-        /* print_indeces(ret.nidx, ret.m, k); */
+        printf("\nDistance of kNN\n");
+        print_dataset_yav(ret.ndist, ret.m, k);
+        printf("\nIndeces of kNN\n");
+        print_indeces(ret.nidx, ret.m, k);
 
         log = fopen("v2_log.txt", "w");
 

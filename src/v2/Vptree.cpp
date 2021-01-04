@@ -148,9 +148,9 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
         return;
     }
 
-    //select_vp(vp_coords, vp.index, low, high);
     srand(1);
-    int temp = rand()%points_corpus + low;
+    //int temp = rand()%points_corpus + low;
+    int temp = select_vp(low, high);
     //vp->index = temp;
     //NodeData.second = temp;
     /* printf("\nThe random number is %d and index: %d\n", temp, _indeces[temp]); */
@@ -181,12 +181,13 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
     /* printf("The vantage point corresponds to the %d element of the global corpus\n", vp_index[index_node]); */
 
     double *dist;
-    dist = Vptree::point_with_corpus(vp_coords + index_node*_dimensions, low, high);
+    dist = Vptree::point_with_corpus(vp_coords + index_node*_dimensions, _corpus, low, high);
+    //dist = euclidean_distance(_corpus + low*_dimensions, vp_coords + index_node*_dimensions, high-low, _dimensions, 1);
     /* print_dataset_yav(dist, 1, points_corpus); */
     /* printf("\n"); */
 
     points_corpus--;
-    uint32_t median = (points_corpus)/2; 
+    uint32_t median = (points_corpus)/2; // if odd, pick the right 
     /* printf("The median is %d\n", median); */
 
     // exclude vantage point itself
@@ -274,7 +275,7 @@ void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) 
 
     _count_nodes = 0;
     searchTree(1,0);
-    printf("Nodes visited in the tree %d of total %d\n", _count_nodes, _n);
+    //printf("Nodes visited in the tree %d of total %d\n", _count_nodes, _n);
 
     /* printf("The size of the heap is %d\n", heap.size()); */
     int isFirst = 1;
@@ -290,11 +291,95 @@ void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) 
 
 }
 
-void Vptree::select_vp(double *cords, uint32_t *index, double *x, int n, int d) {
+int Vptree::select_vp(int low, int high) {
+    if(low == 0 && high == _n) return root_vp_select();
+
+    return rand()%(high-low) + low;
+    /* int i = 0; */
+    /* int best; */
+    /* while(vp_index[i] != FLAG_NO_LEAF) { */
+    /*     i = i*2: */
+    /* } */
+}
+
+int Vptree::root_vp_select() {
+    const int random_points = 5;
+    assert(random_points<_n); // to be meaningful the reservoir sample
+    
+    double *candidates_vp_coords;
+    uint32_t *candidates_vp_indeces;
+    MALLOC(double, candidates_vp_coords, random_points * _dimensions);
+    MALLOC(uint32_t, candidates_vp_indeces, random_points);
+    Vptree::sample(candidates_vp_coords, candidates_vp_indeces, random_points, 0, _n);
+
+    /* print_dataset_yav(candidates_vp_coords, random_points, _dimensions); */
+    /* print_indeces(candidates_vp_indeces, 1, random_points); */
+
+    int best_spread = 0;
+    int best_index = 0;
+    for(int i = 0; i < random_points; i++) {
+        double *random_test_set;
+        MALLOC(double, random_test_set, random_points * _dimensions);
+        Vptree::sample(random_test_set, candidates_vp_indeces, random_points, 0, _n);
+
+        /* printf("The random test set\n"); */
+        /* print_dataset_yav(random_test_set, random_points, _dimensions); */
+        /* print_indeces(candidates_vp_indeces, 1, random_points); */
+
+        /* printf("The target\n"); */
+        /* print_dataset_yav(candidates_vp_coords + i*_dimensions, 1, random_points); */
+        double *dist = Vptree::point_with_corpus(candidates_vp_coords + i*_dimensions, random_test_set, 0, random_points);
+        /* printf("The dist\n"); */
+        /* print_dataset_yav(dist, 1, random_points); */
+        double median;
+        median = qselect(dist, candidates_vp_indeces, random_points, random_points/2);
+        /* print_dataset_yav(dist, 1, random_points); */
+        /* print_indeces(candidates_vp_indeces, 1, random_points); */
+        /* printf("The median is %f\n", median); */
+        /* printf("The index is %d\n", candidates_vp_indeces[random_points/2]); */
+
+        int spread = 0;
+        for(int j = 0; j < random_points; j++) {
+            spread += (dist[j] - median)*(dist[j] - median);
+        }
+        if(spread > best_spread) {
+            best_spread = spread;
+            best_index = candidates_vp_indeces[random_points/2];
+        }
+        /* printf("The spread is %d\n", spread); */
+
+        free(dist);
+        free(random_test_set);
+    }
+    /* printf("The best spread is %d\n", best_spread); */
+    /* printf("The best index is %d\n", best_index); */
+
+    free(candidates_vp_coords);
+    free(candidates_vp_indeces);
+
+    return best_index;
+}
+
+// reservoir sampling. Copy random element from corpus to array
+void Vptree::sample(double *vals, uint32_t *indeces, int num, int low, int high) {
+    int corpus_size = high - low;
+
+    for(int i = 0; i < num; i ++) {
+        memcpy(vals + i*_dimensions, _corpus + (low+i)*_dimensions, sizeof(double) * _dimensions);
+        indeces[i] = _indeces[low + i];
+    }
+
+    for (int i = num; i < corpus_size; i++) { 
+        int j = rand() % (i+1); 
+        if (j < num) {
+            memcpy(vals + j*_dimensions, _corpus + (low+i)*_dimensions, sizeof(double) * _dimensions);
+            indeces[j] = _indeces[low+i];
+        }
+    } 
 }
 
 // naive euclidean distance matrix.
-double *Vptree::point_with_corpus(double *query, int low, int high) {
+double *Vptree::point_with_corpus(double *query, double *corpus, int low, int high) {
     int points = high - low;
     double *distance;
     MALLOC(double, distance, points);
@@ -303,7 +388,7 @@ double *Vptree::point_with_corpus(double *query, int low, int high) {
     for(int j = low; j < high; j++) {
         double temp = 0;
         for (int k = 0; k < _dimensions; k++) {
-            temp += (_corpus[j*_dimensions + k] - query[k]) * (_corpus[j*_dimensions + k] - query[k]);
+            temp += (corpus[j*_dimensions + k] - query[k]) * (corpus[j*_dimensions + k] - query[k]);
         }
         distance[count] = sqrt(temp);
         count++;

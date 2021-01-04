@@ -93,8 +93,8 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     /* printf("\nThe distance matrix n x m: \n"); */
     /* print_dataset_yav(distance, n, m); */
 #elif MATRIX == 2
-    /* printf("\nThe distance matrix m x n: \n"); */
-    /* print_dataset_yav(distance, m, n); */
+    printf("\nThe distance matrix m x n: \n");
+    print_dataset_yav(distance, m, n);
 #endif
 
 
@@ -399,7 +399,14 @@ double qselect(double *v, uint32_t *idx, int64_t len, int64_t k) {
 	int32_t i, st;
     double tmp1;
     double tmp2;
- 
+
+    /* int median = len - 1; */
+    /* if(len>3) { */
+    /*     median = medianThree(v, 0, len/2, len-1); */
+    /*     SWAPval(median, len-1); */
+    /*     SWAPidx(median, len-1); */
+    /* } */
+
 	for (st = i = 0; i < len - 1; i++) {
 		if (v[i] > v[len-1]) continue;
 		SWAPval(i, st);
@@ -413,4 +420,13 @@ double qselect(double *v, uint32_t *idx, int64_t len, int64_t k) {
 	return k == st	?v[st] 
 			:st > k	? qselect(v, idx, st, k)
 				: qselect(v + st, idx + st, len - st, k - st);
+}
+
+int medianThree(double *array, int a, int b, int c) {
+    if ((array[a] > array[b]) != (array[a] > array[c])) 
+        return a;
+    else if ((array[b] > array[a]) != (array[b] > array[c])) 
+        return b;
+    else
+        return c;
 }

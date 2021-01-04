@@ -134,7 +134,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     }
     int offset = distance_offset[rank]/d;
     adjust_indeces(indeces_per_process, 1, m_per_process, offset);
-    print_indeces(indeces_per_process, 1, m_per_process);
+    /* print_indeces(indeces_per_process, 1, m_per_process); */
     printf("\n");
     double *vpt_buffer;
     MALLOC(double, vpt_buffer, corpus_size_per_proc[rank]);

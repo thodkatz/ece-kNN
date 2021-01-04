@@ -90,6 +90,13 @@ uint32_t partition(double arr[], uint32_t start, uint32_t end);
  */
 double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
 
+/*
+ * \brief Get the three indeces of an array and return index of the median
+ *
+ * \param array The array that its values is compared given the indeces
+ */
+int medianThree(double *array, int a, int b, int c);
+
 double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
 
 double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);

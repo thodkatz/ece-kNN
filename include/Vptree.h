@@ -66,14 +66,16 @@ class Vptree {
          * \param
          * \param
          * \param
+         * \return The row index (coordinates) of the corpus
          */
-        void select_vp(double *cords, uint32_t *index, double *corpus, int low, int high);
+        //void select_vp(double *cords, uint32_t *index, double *corpus, int low, int high);
+        int select_vp(int low, int high);
 
         /*
          * For the target node, calcuate all the distances to the given local corpus
          *
          */
-        double *point_with_corpus(double *y, int low, int high);
+        double *point_with_corpus(double *y, double *corpus, int low, int high);
 
         /*
          * Euclidean distance between two points
@@ -97,6 +99,10 @@ class Vptree {
          * \param index_second The index of the second element of the 2d array. The column size should be considered.
          */
         void swap_row(int index_first, int index_second, double *array, int cols);
+
+        void sample(double *vals, uint32_t *indeces, int num, int low, int high);
+
+        int root_vp_select();
 
     public:
 
