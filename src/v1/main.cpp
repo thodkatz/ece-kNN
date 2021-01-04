@@ -19,9 +19,9 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-    uint32_t n = (uint32_t)200;
+    uint32_t n = (uint32_t)2e4;
     uint32_t d = 4;
-    uint32_t k = 3;
+    uint32_t k = 5;
 
     double *x;
     knnresult ret;
@@ -45,11 +45,13 @@ int main(int argc, char *argv[])
         /* printf("\nIndeces of kNN\n"); */
         /* print_indeces(ret.nidx, ret.m, k); */
 
-        log = fopen("v1_log(2).txt", "w");
+        log = fopen("v1_log.txt", "w");
 
         // for comparing v1 and v2 sort the data
-        for(int i = 0; i < ret.m; i++) {
-            qselect(ret.ndist + i*k, ret.nidx + i*k, k, 0);
+        for(int j = 0; j < k; j++) {
+            for(int i = 0; i < ret.m; i++) {
+                qselect(ret.ndist + i*k, ret.nidx + i*k, k, j);
+            }
         }
 
         print_output_file(log, ret.ndist, ret.nidx, ret.m, k);

@@ -24,10 +24,10 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)200;
+    uint32_t n = (uint32_t)2e4;
     uint32_t d = 4;
     uint32_t m = 8;
-    uint32_t k = 3;
+    uint32_t k = 5;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
         return -1;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     }
 
     FILE *input;
-    input = fopen("input(2).txt", "w");
+    input = fopen("input.txt", "w");
     print_input_file(input, x, n, d);
     fclose(input);
     /* print_dataset_yav(x, n, d); */
@@ -121,11 +121,13 @@ int main(int argc, char *argv[])
     /* print_indeces(ret.nidx, m, k); */
 
     FILE *log;
-    log = fopen("v0_log(2).txt", "w");
+    log = fopen("v0_log.txt", "w");
 
     // for comparing v1 and v2 sort the data
-    for(int i = 0; i < ret.m; i++) {
-        qselect(ret.ndist + i*k, ret.nidx + i*k, k, 0);
+    for(int j = 0; j < k; j++) {
+        for(int i = 0; i < ret.m; i++) {
+            qselect(ret.ndist + i*k, ret.nidx + i*k, k, j);
+        }
     }
     print_output_file(log, ret.ndist, ret.nidx, m, k);
     fclose(log);
