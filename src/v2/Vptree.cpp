@@ -149,8 +149,9 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
     }
 
     srand(1);
-    //int temp = rand()%points_corpus + low;
-    int temp = select_vp(low, high);
+    int temp = rand()%points_corpus + low; // random picked vantage point
+    //int temp = select_vp(low, high, index_node); // carefully select vantage point comparing the previous with the current candidate
+    //int temp = variance_select_vp(low, high); // carefully select vantage point comparing variance
     //vp->index = temp;
     //NodeData.second = temp;
     /* printf("\nThe random number is %d and index: %d\n", temp, _indeces[temp]); */
@@ -163,6 +164,7 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
     /* print_dataset_yav_range(_corpus, low, high, _dimensions); */
     /* printf("\n"); */
     memcpy(vp_coords + index_node*_dimensions, _corpus + low*_dimensions, sizeof(double) * _dimensions);
+    /* printf("Vantage point coordinates and index node %d\n", index_node); */
     /* print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions); */
     /* printf("\n"); */
 
@@ -291,12 +293,13 @@ void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) 
 
 }
 
-int Vptree::select_vp(int low, int high) {
+int Vptree::select_vp(int low, int high, int index_node) {
+    /* printf(RED "START selection\n" RESET); */
 #define LOG2(n) log(n)/log(2)
-    if(low == 0 && high == _n) return root_vp_select();
+    if(low == 0 && high == _n) return variance_select_vp(0, _n);
 
     int len = high - low;
-    printf("Low is %d and high is %d\n", low, high);
+    /* printf("Low is %d and high is %d\n", low, high); */
     const int random_points = MIN(len, 101);
 
     double *candidates_vp_coords;
@@ -305,54 +308,57 @@ int Vptree::select_vp(int low, int high) {
     MALLOC(uint32_t, candidates_vp_indeces, random_points);
     Vptree::sample(candidates_vp_coords, candidates_vp_indeces, random_points, low, high);
 
-    printf("Total candidates\n");
-    print_dataset_yav(candidates_vp_coords, random_points, _dimensions);
+    /* printf("Total candidates\n"); */
+    /* print_dataset_yav(candidates_vp_coords, random_points, _dimensions); */
+    /* print_indeces(candidates_vp_indeces, 1, random_points); */
 
     int best_index = 0;
     double best_dist = 0;
     // pick the next vp that is furthest from the previous selected ones
+    // actually pick the next vp that is furthest from the previous parent
+
+    /* printf("Index is %d\n", index_node); */
+    int index_node_parent = (index_node%2==0 ? index_node-=2 : index_node-=1)/2;
+    /* printf("Index node parent %d\n", index_node_parent); */
     for(int i = 0; i < random_points; i++) {
-            printf("\nCandidate for vp\n");
-            print_dataset_yav(candidates_vp_coords + i*_dimensions, 1, _dimensions);
-            int j = 0;
-            double dist = 0;
-        while(vp_index[j] != FLAG_NO_LEAF) {
-            printf("Vantage point %d\n", j);
-            printf("VP coords\n");
-            print_dataset_yav(vp_coords + j*_dimensions, 1, _dimensions);
-            dist += points_distance(vp_coords + j*_dimensions, candidates_vp_coords + i*_dimensions);
-            j++;
-        }
-        printf("The dist %f\n", dist);
+        /* printf("\nCandidate for vp\n"); */
+        /* print_dataset_yav(candidates_vp_coords + i*_dimensions, 1, _dimensions); */
+        /* printf("VP coords\n"); */
+        /* print_dataset_yav(vp_coords + index_node_parent*_dimensions, 1, _dimensions); */
+
+        double dist = 0;
+        dist += points_distance(vp_coords + index_node_parent*_dimensions, candidates_vp_coords + i*_dimensions);
+        /* printf("The dist %f\n", dist); */
         if (dist > best_dist) {
             best_dist = dist;
             best_index = candidates_vp_indeces[i];
         }
     }
-    printf("\nThe best dist %f\n", best_dist);
-    printf("The best index %d\n\n", best_index);
+    /* printf("\nThe best dist %f\n", best_dist); */
+    /* printf("The best index %d\n\n", best_index); */
 
+    /* printf(RED "END selection\n" RESET); */
     return best_index;
 }
 
-int Vptree::root_vp_select() {
-    const int random_points = MIN(_n,101);
+int Vptree::variance_select_vp(int low, int high) {
+    const int random_points = MIN(high-low,101);
     
     double *candidates_vp_coords;
     uint32_t *candidates_vp_indeces;
     MALLOC(double, candidates_vp_coords, random_points * _dimensions);
     MALLOC(uint32_t, candidates_vp_indeces, random_points);
-    Vptree::sample(candidates_vp_coords, candidates_vp_indeces, random_points, 0, _n);
+    Vptree::sample(candidates_vp_coords, candidates_vp_indeces, random_points, low, high);
 
-    print_dataset_yav(candidates_vp_coords, random_points, _dimensions);
-    print_indeces(candidates_vp_indeces, 1, random_points);
+    /* print_dataset_yav(candidates_vp_coords, random_points, _dimensions); */
+    /* print_indeces(candidates_vp_indeces, 1, random_points); */
 
     int best_spread = 0;
     int best_index = 0;
     for(int i = 0; i < random_points; i++) {
         double *random_test_set;
         MALLOC(double, random_test_set, random_points * _dimensions);
-        Vptree::sample(random_test_set, candidates_vp_indeces, random_points, 0, _n);
+        Vptree::sample(random_test_set, candidates_vp_indeces, random_points, low, high);
 
         /* printf("The random test set\n"); */
         /* print_dataset_yav(random_test_set, random_points, _dimensions); */
@@ -383,12 +389,13 @@ int Vptree::root_vp_select() {
         free(dist);
         free(random_test_set);
     }
-    printf("The best spread is %d\n", best_spread);
-    printf("The best index is %d\n", best_index);
+    /* printf("The best spread is %d\n", best_spread); */
+    /* printf("The best index is %d\n", best_index); */
 
     free(candidates_vp_coords);
     free(candidates_vp_indeces);
-
+ 
+    /* printf(RED "END selection\n" RESET); */
     return best_index;
 }
 
@@ -399,14 +406,14 @@ void Vptree::sample(double *vals, uint32_t *indeces, int num, int low, int high)
 
     for(int i = 0; i < num; i ++) {
         memcpy(vals + i*_dimensions, _corpus + (low+i)*_dimensions, sizeof(double) * _dimensions);
-        indeces[i] = _indeces[low + i];
+        indeces[i] = low + i;
     }
 
     for (int i = num; i < corpus_size; i++) { 
         int j = rand() % (i+1); 
         if (j < num) {
             memcpy(vals + j*_dimensions, _corpus + (low+i)*_dimensions, sizeof(double) * _dimensions);
-            indeces[j] = _indeces[low+i];
+            indeces[j] = low+1;
         }
     } 
 }

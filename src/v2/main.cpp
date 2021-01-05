@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-    uint32_t n = (uint32_t)10;
+    uint32_t n = (uint32_t)3e4;
     uint32_t d = 4;
     uint32_t k = 3;
 

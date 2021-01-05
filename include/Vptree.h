@@ -69,7 +69,7 @@ class Vptree {
          * \return The row index (coordinates) of the corpus
          */
         //void select_vp(double *cords, uint32_t *index, double *corpus, int low, int high);
-        int select_vp(int low, int high);
+        int select_vp(int low, int high, int index_node);
 
         /*
          * For the target node, calcuate all the distances to the given local corpus
@@ -102,7 +102,7 @@ class Vptree {
 
         void sample(double *vals, uint32_t *indeces, int num, int low, int high);
 
-        int root_vp_select();
+        int variance_select_vp(int low, int high);
 
     public:
 
