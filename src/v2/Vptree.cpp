@@ -70,7 +70,7 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
         for(int j = 0; j < _dimensions; j++) vp_coords[i*_dimensions+ j] = 0;
     }
 
-    Vptree::makeTree(0, n, 0);
+    Vptree::makeTree(1, 0, n, 0);
 
     /* printf("Final indeces and corpus\n"); */
     /* print_dataset_yav(_corpus, n, _dimensions); */
@@ -86,7 +86,7 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
     /* print_dataset_yav(vp_mu, 1, _num_nodes_balanced); */
 }
 
-void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
+void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
 //#define SWAPcoords(a, b) { \
     memcpy(tmp, _corpus + a, sizeof(double)*_dimensions); memcpy(_corpus + a, _corpus + b, sizeof(double)*_dimensions); memcpy(_corpus + b, tmp, sizeof(double)*_dimensions); }
 #define SWAPindeces(a, b) { tmp = _indeces[a]; _indeces[a] = _indeces[b]; _indeces[b] = tmp; }
@@ -106,6 +106,17 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
     printf("The dataset is\n");
     if(points_corpus < 0) {printf("Negative pointsss\n"); exit(1);}
     print_dataset_yav(_corpus + low*_dimensions, high-low, _dimensions);
+
+    if(height == _target_height_tree) {
+        int count = 0;
+
+        // fill the remaining
+        for(int i = low; i < high; i++) {
+            memcpy(vp_coords + (index_node+count)*_dimensions, _corpus + (i)*_dimensions, sizeof(double)*_dimensions);
+            count++;
+        } 
+        return;
+    }
 
     if(points_corpus == 1) {
         /* printf("We have a leaf!!\n"); */
@@ -175,14 +186,16 @@ void Vptree::makeTree(uint32_t low, uint32_t high, int index_node) {
 
     free(dist);
 
-    makeTree(low + 1, low + 1 + median, LEFT_CHILD(index_node)); 
+    height++;
 
-    makeTree(low + 1 + median, high, RIGHT_CHILD(index_node));
+    makeTree(height, low + 1, low + 1 + median, LEFT_CHILD(index_node)); 
+
+    makeTree(height, low + 1 + median, high, RIGHT_CHILD(index_node));
 
     return;
 }
 
-void Vptree::searchTree(int height, int index_node) {
+void Vptree::searchTree(int current_height, int index_node) {
     if(vp_index[index_node] == FLAG_NO_LEAF) return;
 
     double dist = Vptree::points_distance(_target, vp_coords + index_node*_dimensions);
@@ -197,6 +210,7 @@ void Vptree::searchTree(int height, int index_node) {
     if (dist < _tau) {
         /* printf("New item pushed to heap with dist %f and index %d\n\n", dist, vp_index[index_node]); */
         if (heap.size() == _k) heap.pop();
+
         NodeData.first = dist;
         NodeData.second = vp_index[index_node];
 
@@ -208,15 +222,38 @@ void Vptree::searchTree(int height, int index_node) {
 
 
     // Leaf
-    if(height == _target_height_tree) return;
+    if(current_height == _target_height_tree) {
+        int max_size = pow(2, _target_height_tree - _height_tree);
+        int i = index_node + 1;
+        while(vp_index[i] != FLAG_NO_LEAF && i != max_size) {
+            double dist = Vptree::points_distance(_target, vp_coords + i*_dimensions);
+            // should I stick to the priority queue for this comparison?
+            if (dist < _tau) {
+                /* printf("New item pushed to heap with dist %f and index %d\n\n", dist, vp_index[index_node]); */
+                if (heap.size() == _k) heap.pop();
+
+                NodeData.first = dist;
+                NodeData.second = vp_index[index_node];
+
+                heap.push(NodeData);
+
+                if (heap.size() == _k) _tau = heap.top().first;
+            }
+
+            i++;
+        }
+
+        return;
+    }
+
     if((vp_index[LEFT_CHILD(index_node)] == FLAG_NO_LEAF && vp_index[RIGHT_CHILD(index_node)] == FLAG_NO_LEAF)) return;
 
-    height++;
+    current_height++;
     _count_nodes++;
     /* printf("The count is %d\n", _count_nodes); */
     /* printf("\n"); */
-    if(dist + _tau > vp_mu[index_node]) searchTree(height, RIGHT_CHILD(index_node)); 
-    if(dist - _tau < vp_mu[index_node]) searchTree(height, LEFT_CHILD(index_node));
+    if(dist + _tau > vp_mu[index_node]) searchTree(current_height, RIGHT_CHILD(index_node)); 
+    if(dist - _tau < vp_mu[index_node]) searchTree(current_height, LEFT_CHILD(index_node));
 }
 
 void Vptree::searchKNN(double *dist, uint32_t *idx, double *target, uint32_t k) {
@@ -335,7 +372,6 @@ int Vptree::variance_select_vp(int low, int high) {
     int best_spread = 0;
     int best_index = 0;
     for(int i = 0; i < random_points; i++) {
-
 
         /* printf("The target\n"); */
         /* print_dataset_yav(candidates_vp_coords + i*_dimensions, 1, _dimensions); */

@@ -49,7 +49,7 @@ class Vptree {
          * \param high
          * \param index_node The index of each node in the serialized version of the tree
          */
-        void makeTree(uint32_t low, uint32_t high, int index_node);
+        void makeTree(int height, uint32_t low, uint32_t high, int index_node);
 
         /*
          * Search a tree in depth first format
