@@ -208,7 +208,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
                 /* printf("\n"); */
 
                 // update
-                qselect(merged_distance, merged_indeces, len_total, k-1);
+                qselect_and_indeces(merged_distance, merged_indeces, len_total, k-1);
                 memcpy(ret_per_process.ndist + j*k, merged_distance, sizeof(double) * k);
                 memcpy(ret_per_process.nidx + j*k, merged_indeces, sizeof(uint32_t) * k);
 

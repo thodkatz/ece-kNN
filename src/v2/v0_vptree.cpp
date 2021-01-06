@@ -233,7 +233,7 @@ int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k) {
 } 
 
 
-double qselect(double *v, uint32_t *idx, int64_t len, int64_t k) {
+double qselect_and_indeces(double *v, uint32_t *idx, int64_t len, int64_t k) {
 #define SWAPval(a, b) { tmp1 = v[a]; v[a] = v[b]; v[b] = tmp1; }
 #define SWAPidx(a, b) { tmp2 = idx[a]; idx[a] = idx[b]; idx[b] = tmp2; }
 
@@ -260,9 +260,36 @@ double qselect(double *v, uint32_t *idx, int64_t len, int64_t k) {
 	SWAPidx(len-1, st);
  
 	return k == st	?v[st] 
-			:st > k	? qselect(v, idx, st, k)
-				: qselect(v + st, idx + st, len - st, k - st);
+			:st > k	? qselect_and_indeces(v, idx, st, k)
+				: qselect_and_indeces(v + st, idx + st, len - st, k - st);
 }
+
+double qselect(double *v,int64_t len, int64_t k) {
+#define SWAPval(a, b) { tmp1 = v[a]; v[a] = v[b]; v[b] = tmp1; }
+
+	int32_t i, st;
+    double tmp1;
+ 
+    /* int median = len - 1; */
+    /* if(len>3) { */
+    /*     median = medianThree(v, 0, len/2, len-1); */
+    /*     SWAPval(median, len-1); */
+    /*     SWAPidx(median, len-1); */
+    /* } */
+
+	for (st = i = 0; i < len - 1; i++) {
+		if (v[i] > v[len-1]) continue;
+		SWAPval(i, st);
+		st++;
+	}
+ 
+	SWAPval(len-1, st);
+ 
+	return k == st	?v[st] 
+			:st > k	? qselect(v,st, k)
+				: qselect(v + st, len - st, k - st);
+}
+
 
 int medianThree(double *array, int a, int b, int c) {
     if ((array[a] > array[b]) != (array[a] > array[c])) 

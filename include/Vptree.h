@@ -19,9 +19,10 @@ class Vptree {
     public:
 
         // Node of the Vptree
-        double   *vp_mu;       // Radius/median for every node
-        double   *vp_coords;   // Coordinates of vantage point
-        int      *vp_index;    // Index of vantage point that corresponds to the index of a point of the local corpus
+        double     *vp_mu;                 // Radius/median for every node
+        double     *vp_coords;             // Coordinates of vantage point
+        int        *vp_index;              // Index of vantage point that corresponds to the index of a point of the local corpus
+        int total_nodes_visited  = 0; // Total numbers visited to find kNN. This will can be compared with the _n x _n
 
     private:
         int _height_tree;        // The height of the tree
@@ -100,7 +101,9 @@ class Vptree {
          */
         void swap_row(int index_first, int index_second, double *array, int cols);
 
-        void sample(double *vals, uint32_t *indeces, int num, int low, int high);
+        void sample_and_indeces(double *vals, uint32_t *indeces, int num, int low, int high);
+
+        void sample(double *vals, int num, int low, int high);
 
         int variance_select_vp(int low, int high);
 

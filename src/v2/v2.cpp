@@ -63,8 +63,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             }
         }
 
-        /* printf("\nThe corpus set: \n"); */
-        /* print_dataset_yav(x, n, d); */        
+        printf("\nThe corpus set: \n");
+        print_dataset_yav(x, n, d);        
     }
 
     int corpus_size_per_proc[numtasks]; 
@@ -140,7 +140,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     MALLOC(double, vpt_buffer, corpus_size_per_proc[rank]);
     memcpy(vpt_buffer, init_buffer, sizeof(double) * corpus_size_per_proc[rank]);
 
-    float target_height_tree_percent = 1.0;
+    const float target_height_tree_percent = 1.0;
     Vptree vpt(vpt_buffer, indeces_per_process, m_per_process, d, num_nodes_balanced_per_proc[rank], height_tree[rank], target_height_tree_percent);
 
     free(vpt_buffer);
@@ -152,10 +152,6 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         ret_per_process.nidx[i] = UINT32_MAX;
     }
 
-    // use vpt.vp_mu and so on for the current stuff
-    /* double *curr_vp_mu; */
-    /* double *curr_vp_coords; */
-    /* uint32_t *curr_vp_index; */
     knnresult ret_curr;
 
     double *send_vp_mu;
@@ -320,7 +316,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
                 /* printf("\n"); */
 
                 // update
-                qselect(merged_distance, merged_indeces, len_total, k-1);
+                qselect_and_indeces(merged_distance, merged_indeces, len_total, k-1);
                 memcpy(ret_per_process.ndist + j*k, merged_distance, sizeof(double) * k);
                 memcpy(ret_per_process.nidx + j*k, merged_indeces, sizeof(uint32_t) * k);
 
@@ -379,6 +375,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     /* print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
 
     printf(CYN "Rank: %d. " RESET "Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
+
+    printf("Total number of nodes visited %d of avaialbe %d\n", vpt.total_nodes_visited, m_per_process*m_per_process);
 
     if(rank == MASTER) {TIC();}
 

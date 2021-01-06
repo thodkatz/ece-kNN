@@ -88,7 +88,9 @@ uint32_t partition(double arr[], uint32_t start, uint32_t end);
  *
  * source: rosettacode database
  */
-double qselect(double *v, uint32_t *idx, int64_t len, int64_t k);
+double qselect_and_indeces(double *v, uint32_t *idx, int64_t len, int64_t k);
+
+double qselect(double *v, int64_t len, int64_t k);
 
 /*
  * \brief Get the three indeces of an array and return index of the median
@@ -140,8 +142,6 @@ void print_dataset(double *array, uint32_t row, uint32_t col);
  */
 void print_dataset_yav(double *array, uint32_t row, uint32_t col);
 // void print_dataset_comma
-
-void print_dataset_yav_range(double *array, uint32_t low, uint32_t high, uint32_t col);
 
 /*
  * \brief Print 2d array using comma separated values format
