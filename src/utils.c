@@ -163,7 +163,7 @@ void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, u
 
 // D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).');
 double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
-    printf("Calculating distance matrix nxm approach\n");
+    //printf("Calculating distance matrix nxm approach\n");
     struct timespec tic;
     struct timespec toc;
 

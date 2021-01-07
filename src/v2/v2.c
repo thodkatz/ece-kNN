@@ -129,19 +129,19 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     uint32_t *indeces_per_process;
     MALLOC(uint32_t, indeces_per_process, m_per_process);
-    printf("\n");
+    /* printf("\n"); */
     for(uint32_t i = 0; i < m_per_process; i++) {
         indeces_per_process[i] = i;
     }
     int offset = distance_offset[rank]/d;
     adjust_indeces(indeces_per_process, 1, m_per_process, offset);
     /* print_indeces(indeces_per_process, 1, m_per_process); */
-    printf("\n");
+    /* printf("\n"); */
     double *vpt_buffer;
     MALLOC(double, vpt_buffer, corpus_size_per_proc[rank]);
     memcpy(vpt_buffer, init_buffer, sizeof(double) * corpus_size_per_proc[rank]);
 
-    const float target_height_tree_percent = 1;
+    const float target_height_tree_percent = 0.5;
     Vptree vpt(vpt_buffer, indeces_per_process, m_per_process, d, num_nodes_balanced_per_proc[rank], height_tree[rank], target_height_tree_percent);
 
     free(vpt_buffer);

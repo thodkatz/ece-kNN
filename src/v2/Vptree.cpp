@@ -12,6 +12,7 @@
 #include <tuple>
 #include <iostream>
 #include <array>
+#include <cblas.h>
 
 #define FLAG_NO_LEAF -1
 #define LEFT_CHILD(index) index*2 + 1
@@ -66,10 +67,10 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
 
     _target_height_tree = _height_tree * target_height_tree_percent;
     assert(0 < _target_height_tree && _target_height_tree <= _height_tree);
-    printf("The height of the complete tree is %d\n", _height_tree);
-    printf("The height percentage is %f\n", target_height_tree_percent);
-    printf("The requested (rounded) height of the tree is %d\n", _target_height_tree);
-    printf("The total number of nodes for a balanced tree %d\n", _num_nodes_balanced);
+    /* printf("The height of the complete tree is %d\n", _height_tree); */
+    /* printf("The height percentage is %f\n", target_height_tree_percent); */
+    /* printf("The requested (rounded) height of the tree is %d\n", _target_height_tree); */
+    /* printf("The total number of nodes for a balanced tree %d\n", _num_nodes_balanced); */
 
     // init each node of the vptree
     MALLOC(double, vp_mu, _num_nodes_balanced);
@@ -84,12 +85,15 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
     _sub_nodes_balanced = 0;
     int diff_height = _height_tree - _target_height_tree;
     for(int i = 1; i <= diff_height; i++) _sub_nodes_balanced += pow(2,i);
-    printf("Sub nodes %d\n", _sub_nodes_balanced);
+    /* /1* printf("Sub nodes %d\n", _sub_nodes_balanced); *1/ */
 
     _count_nodes_before_target = pow(2,_target_height_tree-1);
     assert(_target_height_tree-1>=0);
-
+    /* struct timespec tic; */
+    /* struct timespec toc; */
+    /* TIC() */    
     Vptree::makeTree(1, 0, n, 0);
+    //TOC("Time elasped making tree %lf\n");
 
     /* printf("Final indeces and corpus\n"); */
     /* print_dataset_yav(_corpus, n, _dimensions); */
@@ -179,6 +183,7 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
     double *dist;
     dist = Vptree::point_with_corpus(vp_coords + index_node*_dimensions, _corpus, low, high);
     //dist = euclidean_distance(_corpus + low*_dimensions, vp_coords + index_node*_dimensions, high-low, _dimensions, 1);
+    // much better the second solution for large d
     /* print_dataset_yav(dist, 1, points_corpus); */
     /* printf("\n"); */
 
@@ -532,7 +537,11 @@ double *Vptree::point_with_corpus(double *query, double *corpus, int low, int hi
 double Vptree::points_distance(double *x, double *y) {
     double distance = 0;
 
-    for (uint32_t k = 0; k < _dimensions; k++) distance += (x[k] - y[k]) * (x[k] - y[k]);
+    //for (uint32_t k = 0; k < _dimensions; k++) distance += (x[k] - y[k]) * (x[k] - y[k]);
+    double d1 = cblas_ddot(_dimensions, x, 1, x, 1);
+    double d2 = cblas_ddot(_dimensions, y, 1, y, 1);
+    double d3 = cblas_ddot(_dimensions, x, 1, y, 1);
+    distance = d1 -2*d3 + d2;   
     distance = sqrt(distance);
 
     return distance;

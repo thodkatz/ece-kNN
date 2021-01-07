@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)2e4;
-    uint32_t d = 8;
+    uint32_t n = (uint32_t)3e4;
+    uint32_t d = 10;
     uint32_t m = 8;
     uint32_t k = 3;
     if (m > n) {
@@ -116,10 +116,10 @@ int main(int argc, char *argv[])
 
     TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
-    printf("\nDistance of kNN\n");
-    print_dataset_yav(ret.ndist, m, k);
-    printf("\nIndeces of kNN\n");
-    print_indeces(ret.nidx, m, k);
+    /* printf("\nDistance of kNN\n"); */
+    /* print_dataset_yav(ret.ndist, m, k); */
+    /* printf("\nIndeces of kNN\n"); */
+    /* print_indeces(ret.nidx, m, k); */
 
     FILE *log;
     log = fopen("logs/v0_log.txt", "w");
