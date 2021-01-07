@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <time.h>
 #include <stdlib.h>
-#include "main.h"
+#include "v0.h"
+#include "utils.h"
 #include <math.h>
 #include <string.h>
 
@@ -24,8 +25,8 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)10;
-    uint32_t d = 4;
+    uint32_t n = (uint32_t)2e4;
+    uint32_t d = 8;
     uint32_t m = 8;
     uint32_t k = 3;
     if (m > n) {
@@ -57,7 +58,7 @@ int main(int argc, char *argv[])
     }
 
     FILE *input;
-    input = fopen("input.txt", "w");
+    input = fopen("logs/input.txt", "w");
     print_input_file(input, x, n, d);
     fclose(input);
     /* print_dataset_yav(x, n, d); */
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
     print_indeces(ret.nidx, m, k);
 
     FILE *log;
-    log = fopen("v0_log.txt", "w");
+    log = fopen("logs/v0_log.txt", "w");
 
     // for comparing v1 and v2 sort the data
     for(int j = 0; j < k; j++) {
@@ -140,81 +141,4 @@ int main(int argc, char *argv[])
     free(ret.ndist);
 
     return 0;
-}
-
-// print 2d array in matlab format (row wise)
-void print_dataset(double *array, uint32_t row, uint32_t col) {
-    printf("[ ");
-    for (uint32_t i = 0; i < row; i++) {
-        for (uint32_t j = 0; j < col; j++) {
-            printf("%lf ", array[i*col + j]);
-        }
-        if (i != row-1) printf("; ");
-        else printf("]\n");
-    }
-}
-
-
-void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col) {
-    for (uint32_t i = 0; i < row; i++) {
-        for (uint32_t j = 0; j < col; j++) {
-            fprintf(f, "%lf ", array[i*col + j]);
-        }
-        fprintf(f, "\n");
-    }
-
-}
-
-// print 2d array in python format (row wise)
-void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
-    for (uint32_t i = 0; i < row; i++)
-    {
-        if (i == 0)
-            printf("[[");
-        else
-            printf(" [");
-        for (uint32_t j = 0; j < col; j++)
-            if (j != col -1) printf("%lf,", array[i*col + j]);
-            else printf("%lf", array[i*col + j]);
-        if (i == row -1)
-            printf("]]\n");
-        else
-            printf("],\n");
-    }
-
-}
-
-
-void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
-    for(uint32_t i = 0; i < row; i++)
-    {
-        if(i == 0)
-            printf("[[");
-        else
-            printf(" [");
-        for(uint32_t j = 0; j < col; j++) {
-            if (j != col -1) printf("%d,", array[i*col + j]);
-            else printf("%d", array[i*col + j]);
-        }
-        if(i == row -1)
-            printf("]]\n");
-        else
-            printf("],\n");
-    }
-}
-
-void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col) {
-    for(uint32_t i = 0; i < row; i++)
-    {
-        for(uint32_t j = 0; j < col; j++) fprintf(f, "%lf ", dist[i*col + j]);
-
-            fprintf(f, "\n");
-    }
-
-    for(uint32_t i = 0; i < row; i++)
-    {
-        for(uint32_t j = 0; j < col; j++) fprintf(f, "%u ", indeces[i*col + j]);
-
-        fprintf(f, "\n");
-    }
 }

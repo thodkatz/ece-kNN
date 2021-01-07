@@ -1,4 +1,4 @@
-X = dlmread('input.txt');
+X = dlmread('logs/input.txt');
 k = 3;
 
 %tic
@@ -9,5 +9,5 @@ tic
 [idx, dist] = knnsearch(X, X, 'K', k, 'Distance', 'euclidean');
 toc
 
-dlmwrite('matlab.txt', dist,'delimiter', ' ', 'precision', '%.06f');
-dlmwrite('matlab.txt', idx, '-append', 'delimiter', ' ');
+dlmwrite('logs/matlab.txt', dist,'delimiter', ' ', 'precision', '%.06f');
+dlmwrite('logs/matlab.txt', idx, '-append', 'delimiter', ' ');

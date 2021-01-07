@@ -8,10 +8,10 @@ DIRSRC = src
 DIR_v0 = $(DIRSRC)/v0
 DIR_v1 = $(DIRSRC)/v1
 DIR_v2 = $(DIRSRC)/v2
-BASE = $(DIRSRC)/*.c $(DIRSRC)/*.cpp 
-SRC_v0 = $(BASE) $(DIR_v0)/*.cpp 
-SRC_v1 = $(BASE) $(DIR_v1)/*.cpp $(DIR_v0)/v0.cpp
-SRC_v2 = $(BASE) $(DIR_v2)/*.cpp
+BASE = $(DIRSRC)/*.c 
+SRC_v0 = $(BASE) $(DIR_v0)/*.c 
+SRC_v1 = $(BASE) $(DIR_v1)/*.c $(DIR_v0)/v0.c
+SRC_v2 = $(BASE) $(DIR_v2)/*.c $(DIR_v2)/*.cpp
 INC = -I include
 
 all: v0 v1 v2

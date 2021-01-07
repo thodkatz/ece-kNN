@@ -1,54 +1,163 @@
+#include <time.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cblas.h>
-#include <string.h>
 #include <math.h>
-#include <time.h>
-#include "main.h"
-#include "v2.h"
-#include "Vptree.h"
+#include <cblas.h>
+#include "mmio.h"
+#include "utils.h"
 
-
-/*
- * Calculate dot product using cblas routine
- *
- * 0 --> false
- * 1 --> true 
- */
-#define CBLAS_DDOT 1
-
-// assume that kNN including itself 
-knnresult kNN_vptree(Vptree &vpt, double *y, int n, uint32_t m, uint32_t d, uint32_t k) {
-
-    /* printf("Entering knn function, m:%d\n", m); */
-    /* printf("The y is \n"); */
-    /* print_dataset_yav(y, m, d); */
-
-    knnresult ret;
-    MALLOC(double, ret.ndist, m*MIN(k, n));
-    MALLOC(uint32_t, ret.nidx, m*MIN(k, n));
-    ret.k = MIN(n,k); 
-    ret.m = m;
-
-    struct timespec tic;
-    struct timespec toc;
-    
-    TIC()
-
-    // search vp tree
-    for(uint32_t i = 0; i < m; i++) {
-        double *target;
-        MALLOC(double, target, d);
-        memcpy(target, y + i*d, sizeof(double) * d);
-        vpt.searchKNN(ret.ndist + MIN(k,n)*i, ret.nidx + MIN(k,n)*i, target, MIN(n,k));
-        free(target);
-
-        /* print_dataset_yav(ret.ndist + MIN(n,k)*i, 1, MIN(n,k)); */
-        /* print_indeces(ret.nidx + MIN(n,k)*i, 1, MIN(n,k)); */
+double diff_time (struct timespec start, struct timespec end) {
+    uint32_t diff_sec = (end.tv_sec - start.tv_sec);
+    int32_t diff_nsec = (end.tv_nsec - start.tv_nsec);
+    if ((end.tv_nsec - start.tv_nsec) < 0) {
+        diff_sec -= 1;
+        diff_nsec = 1e9 + end.tv_nsec - start.tv_nsec;
     }
 
-    TOC("Time elapsed calculating kNN vp-tree (seconds): %lf\n")
-    return ret;
+    return (1e9*diff_sec + diff_nsec)/1e9;
+}
+
+void mm2coo(int argc, char *argv[], uint32_t **rows, uint32_t **columns, uint32_t nnz, uint32_t n) {
+    MM_typecode matcode;
+    FILE *f;
+    uint32_t r, c; // MxN dimensions (square matrix M=N) 
+    // double *val; // dont need this. Our matrices are binary 1 or zero
+
+    // expecting a filename to read (./main <filename>)
+    if (argc < 2) {
+        printf("Missed command line arguements\n");
+		fprintf(stderr, "Usage: %s [martix-market-filename]\n", argv[0]);
+		exit(1);
+	}
+    else {
+        if ((f = fopen(argv[1], "r")) == NULL) { 
+            printf("Can't open file\n");
+            exit(1);  
+        }
+    }
+
+    if (mm_read_banner(f, &matcode) != 0) {
+        printf("Could not process Matrix Market banner.\n");
+        exit(1);
+    }
+
+    // what MM formats do you support?
+    if (!(mm_is_matrix(matcode) && mm_is_coordinate(matcode) && mm_is_pattern(matcode) && 
+            mm_is_symmetric(matcode))) {
+        printf("Sorry, this application does not support ");
+        printf("Matrix Market type: [%s]\n", mm_typecode_to_str(matcode));
+        exit(1);
+    }
+
+    /* find out size of sparse matrix .... */
+    if ((mm_read_mtx_crd_size(f, &r, &c, &nnz)) !=0) exit(1);
+    //printf("Number of nnz: %u\n", nnz);
+    n = r;
+    //printf("Rows/columns: %u\n", n);
+
+    *rows = (uint32_t*) malloc(nnz * sizeof(uint32_t));
+    *columns = (uint32_t*) malloc(nnz * sizeof(uint32_t));
+
+    uint32_t x,y = 0;
+    for (uint32_t i=0; i<nnz; i++) {
+        fscanf(f, "%u %u\n", &x, &y);
+        if (x == y) {
+            nnz--;
+            i--;
+            continue;
+        }
+        (*rows)[i] = x;
+        (*columns)[i] = y;
+        (*rows)[i]--;  /* adjust from 1-based to 0-based */
+        (*columns)[i]--;
+
+        //printf("Elements: [%lu, %lu]\n", rows[i], columns[i]);
+    }
+
+    printf("Success, MM format is converted to COO\n");
+
+    if (f !=stdin) {
+        fclose(f);
+        //printf("File is successfully closed\n");
+    }
+}
+
+// print 2d array in matlab format (row wise)
+void print_dataset(double *array, uint32_t row, uint32_t col) {
+    printf("[ ");
+    for (uint32_t i = 0; i < row; i++) {
+        for (uint32_t j = 0; j < col; j++) {
+            printf("%lf ", array[i*col + j]);
+        }
+        if (i != row-1) printf("; ");
+        else printf("]\n");
+    }
+}
+
+
+void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col) {
+    for (uint32_t i = 0; i < row; i++) {
+        for (uint32_t j = 0; j < col; j++) {
+            fprintf(f, "%lf ", array[i*col + j]);
+        }
+        fprintf(f, "\n");
+    }
+
+}
+
+// print 2d array in python format (row wise)
+void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
+    for (uint32_t i = 0; i < row; i++)
+    {
+        if (i == 0)
+            printf("[[");
+        else
+            printf(" [");
+        for (uint32_t j = 0; j < col; j++)
+            if (j != col -1) printf("%lf,", array[i*col + j]);
+            else printf("%lf", array[i*col + j]);
+        if (i == row -1)
+            printf("]]\n");
+        else
+            printf("],\n");
+    }
+
+}
+
+
+void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
+    for(uint32_t i = 0; i < row; i++)
+    {
+        if(i == 0)
+            printf("[[");
+        else
+            printf(" [");
+        for(uint32_t j = 0; j < col; j++) {
+            if (j != col -1) printf("%d,", array[i*col + j]);
+            else printf("%d", array[i*col + j]);
+        }
+        if(i == row -1)
+            printf("]]\n");
+        else
+            printf("],\n");
+    }
+}
+
+void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col) {
+    for(uint32_t i = 0; i < row; i++)
+    {
+        for(uint32_t j = 0; j < col; j++) fprintf(f, "%lf ", dist[i*col + j]);
+
+            fprintf(f, "\n");
+    }
+
+    for(uint32_t i = 0; i < row; i++)
+    {
+        for(uint32_t j = 0; j < col; j++) fprintf(f, "%u ", indeces[i*col + j]);
+
+        fprintf(f, "\n");
+    }
 }
 
 
@@ -109,6 +218,26 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
     return distance;
 }
 
+// naive euclidean distance matrix. That way we don't need to transpose the matrix though
+double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
+    printf("Calculating distance matrix naive approach\n");
+    double *distance;
+    MALLOC(double, distance, n*m);
+
+    for(uint32_t i = 0; i < m; i++) {
+        for(uint32_t j = 0; j < n; j++) {
+            distance[n*i + j] = 0;
+            for (uint32_t k = 0; k < d; k++) {
+                distance[n*i + j] += (x[j*d + k] - y[i*d + k]) * (x[j*d + k] - y[i*d + k]);
+            }
+            distance[n*i + j] = sqrt(distance[n*i + j]);
+        }
+    }
+
+    return distance;
+}
+
+
 // D' = sqrt(sum(X.^2,2).' - 2 * Y * X.' + sum(Y.^2, 2))
 double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
     printf("Calculating distance matrix mxn approach [%u, %u]\n", m, n);
@@ -162,26 +291,6 @@ double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d,
 
     free(d1);
     free(d2);
-
-    return distance;
-}
-
-
-// naive euclidean distance matrix. That way we don't need to transpose the matrix though
-double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
-    printf("Calculating distance matrix naive approach\n");
-    double *distance;
-    MALLOC(double, distance, n*m);
-
-    for(uint32_t i = 0; i < m; i++) {
-        for(uint32_t j = 0; j < n; j++) {
-            distance[n*i + j] = 0;
-            for (uint32_t k = 0; k < d; k++) {
-                distance[n*i + j] += (x[j*d + k] - y[i*d + k]) * (x[j*d + k] - y[i*d + k]);
-            }
-            distance[n*i + j] = sqrt(distance[n*i + j]);
-        }
-    }
 
     return distance;
 }
@@ -290,7 +399,6 @@ double qselect(double *v,int64_t len, int64_t k) {
 				: qselect(v + st, len - st, k - st);
 }
 
-
 int medianThree(double *array, int a, int b, int c) {
     if ((array[a] > array[b]) != (array[a] > array[c])) 
         return a;
@@ -298,4 +406,35 @@ int medianThree(double *array, int a, int b, int c) {
         return b;
     else
         return c;
+}
+
+void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *memory_offset) {
+    int remain = n%numtasks;
+    for (int i = 0; i < numtasks; i++) {
+        memory_offset[i] = 0;
+
+        size_per_proc[i] = n/numtasks * d;
+
+        // the remaining n share them like a deck of cards (better load balance)
+        if (remain) {
+            size_per_proc[i] += d;
+            remain--;
+        }
+
+        if(i!= 0) memory_offset[i] = memory_offset[i-1] + size_per_proc[i-1];
+    }
+}
+
+void rotate_left(int *arr, int size) {
+    int temp = arr[0];
+    for(int i = 0; i < size-1; i++) arr[i] = arr[i+1];
+    arr[size-1] = temp;
+}
+
+void adjust_indeces(uint32_t *arr, uint32_t rows, uint32_t cols, int offset) {
+    for(uint32_t i = 0; i < rows; i++) {
+        for(uint32_t j = 0; j < cols; j++) {
+            arr[j + i*cols] += offset; 
+        }
+    }
 }

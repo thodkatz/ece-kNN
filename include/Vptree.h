@@ -25,10 +25,12 @@ class Vptree {
         int total_nodes_visited  = 0; // Total numbers visited to find kNN. This will can be compared with the _n x _n
 
     private:
-        int _height_tree;        // The height of the tree
-        int _target_height_tree; // Don't create the whole tree. Stop until _targetHeightTree
-        int _num_nodes_balanced; // The number of nodes of the tree created by the corpus points if it was balanced 
-        int _count_nodes;         // count how many nodes we visited. Should be less or equal of the total 
+        int _height_tree;               // The height of the tree
+        int _target_height_tree;        // Don't create the whole tree. Stop until _targetHeightTree
+        int _num_nodes_balanced;        // The number of nodes of the tree created by the corpus points if it was balanced 
+        int _count_nodes;               // count how many nodes we visited. Should be less or equal of the total 
+        int _sub_nodes_balanced;        // When the tree creation is stopped sooner, we need to know the remaining corpus points for each node 
+        int _count_nodes_before_target;
 
         uint32_t _dimensions;  // The number of dimensions of the metric space
         int      _n;

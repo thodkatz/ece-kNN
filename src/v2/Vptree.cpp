@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include "Vptree.h"
-#include "main.h"
+#include "v0.h"
+#include "utils.h"
 #include <algorithm>
 #include <limits>
 #include <queue>
@@ -18,6 +19,8 @@
 #define SAMPLE_SIZE 5 // the size of the random sample used to evaluate the vantage point
 
 void Vptree::init_before_search(int n, int num_nodes_balanced, int height_tree, float target_height_percent, double *vp_mu, double *vp_coords, int *vp_index) {
+    // Everything you need to search the tree without creating explicitly
+
     _num_nodes_balanced = num_nodes_balanced;
     _height_tree = height_tree;
     _n = n;
@@ -32,12 +35,20 @@ void Vptree::init_before_search(int n, int num_nodes_balanced, int height_tree, 
     /* print_indeces(vp_index, 1, _num_nodes_balanced); */
     /* printf("\n"); */
 
-    printf("The height of the complete tree is %d\n", height_tree);
+    /* printf("The height of the complete tree is %d\n", height_tree); */
 
     _target_height_tree = _height_tree * target_height_percent;
     assert(0 < _target_height_tree && _target_height_tree <= _height_tree);
-    printf("The height percentage is %f\n", target_height_percent);
-    printf("The requested (rounded) height of the tree is %d\n", _target_height_tree);
+    /* printf("The height percentage is %f\n", target_height_percent); */
+    /* printf("The requested (rounded) height of the tree is %d\n", _target_height_tree); */
+
+    _sub_nodes_balanced = 0;
+    int diff_height = _height_tree - _target_height_tree;
+    for(int i = 1; i <= diff_height; i++) _sub_nodes_balanced += pow(2,i);
+    /* printf("Sub nodes %d\n", _sub_nodes_balanced); */
+
+    _count_nodes_before_target = pow(2,_target_height_tree-1);
+    assert(_target_height_tree-1>=0);
 }
 
 Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimensions, int num_nodes_balanced, int height_tree, float target_height_tree_percent) {
@@ -70,6 +81,14 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
         for(int j = 0; j < _dimensions; j++) vp_coords[i*_dimensions+ j] = 0;
     }
 
+    _sub_nodes_balanced = 0;
+    int diff_height = _height_tree - _target_height_tree;
+    for(int i = 1; i <= diff_height; i++) _sub_nodes_balanced += pow(2,i);
+    printf("Sub nodes %d\n", _sub_nodes_balanced);
+
+    _count_nodes_before_target = pow(2,_target_height_tree-1);
+    assert(_target_height_tree-1>=0);
+
     Vptree::makeTree(1, 0, n, 0);
 
     /* printf("Final indeces and corpus\n"); */
@@ -91,32 +110,21 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
     memcpy(tmp, _corpus + a, sizeof(double)*_dimensions); memcpy(_corpus + a, _corpus + b, sizeof(double)*_dimensions); memcpy(_corpus + b, tmp, sizeof(double)*_dimensions); }
 #define SWAPindeces(a, b) { tmp = _indeces[a]; _indeces[a] = _indeces[b]; _indeces[b] = tmp; }
 
-    printf("\nLets make a tree (Christmas?)\n");
-    printf("The low is %d and the high is %d\n", low, high);
+    /* printf("\nLets make a tree (Christmas?)\n"); */
+    /* printf("The low is %d and the high is %d and current height %d, target height %d\n", low, high, height, _target_height_tree); */
 
     int points_corpus = high - low;
     /* printf("The points are: %d\n", points_corpus); */
 
     if(points_corpus == 0) return; 
     
-    printf("The indices are:\n");
-    print_indeces(_indeces + low, 1, high-low);
-    printf("\n");
+    /* printf("The indices are:\n"); */
+    /* print_indeces(_indeces + low, 1, high-low); */
+    /* printf("\n"); */
 
-    printf("The dataset is\n");
+    /* printf("The dataset is\n"); */
     if(points_corpus < 0) {printf("Negative pointsss\n"); exit(1);}
-    print_dataset_yav(_corpus + low*_dimensions, high-low, _dimensions);
-
-    if(height == _target_height_tree) {
-        int count = 0;
-
-        // fill the remaining
-        for(int i = low; i < high; i++) {
-            memcpy(vp_coords + (index_node+count)*_dimensions, _corpus + (i)*_dimensions, sizeof(double)*_dimensions);
-            count++;
-        } 
-        return;
-    }
+    /* print_dataset_yav(_corpus + low*_dimensions, high-low, _dimensions); */
 
     if(points_corpus == 1) {
         /* printf("We have a leaf!!\n"); */
@@ -126,6 +134,14 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
 
         /* printf("The vantage point corresponds to the %d element of the global corpus\n", vp_index[index_node]); */
         return;
+    }
+
+    static int index_offset = 0;
+    // recalibrate index node when stoping tree creation sooner
+    if(height == _target_height_tree && height != _height_tree) {
+        index_node += _sub_nodes_balanced*index_offset ;
+        /* printf("New index %d\n", index_node); */
+        index_offset++;
     }
 
     srand(1);
@@ -142,49 +158,73 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
     // the dist now will have the first element the vantage point
     Vptree::swap_row(temp*_dimensions, low*_dimensions, _corpus, _dimensions);
 
-    printf("Swapping distance\n");
+    /* printf("Swapping distance\n"); */
     if(points_corpus < 0) {printf("Negative corpus points\n"); exit(1);}
-    print_dataset_yav(_corpus + low*_dimensions, high - low, _dimensions);
-    printf("\n");
+    /* print_dataset_yav(_corpus + low*_dimensions, high - low, _dimensions); */
+    /* printf("\n"); */
     memcpy(vp_coords + index_node*_dimensions, _corpus + low*_dimensions, sizeof(double) * _dimensions);
-    printf("Vantage point coordinates and index node %d\n", index_node);
-    print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions);
-    printf("\n");
+    /* printf("Vantage point coordinates and index node %d\n", index_node); */
+    /* print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions); */
+    /* printf("\n"); */
 
-    printf("Swapping indeces\n");
+    /* printf("Swapping indeces\n"); */
     uint32_t tmp;
     SWAPindeces(temp, low);
-    print_indeces(_indeces + low, 1, high-low);
-    printf("\n");
+    /* print_indeces(_indeces + low, 1, high-low); */
+    /* printf("\n"); */
     vp_index[index_node] = _indeces[low];
 
-    printf("The vantage point corresponds to the %d element of the global corpus\n", vp_index[index_node]);
+    /* printf("The vantage point corresponds to the %d element of the global corpus\n", vp_index[index_node]); */
 
     double *dist;
     dist = Vptree::point_with_corpus(vp_coords + index_node*_dimensions, _corpus, low, high);
     //dist = euclidean_distance(_corpus + low*_dimensions, vp_coords + index_node*_dimensions, high-low, _dimensions, 1);
-    print_dataset_yav(dist, 1, points_corpus);
-    printf("\n");
+    /* print_dataset_yav(dist, 1, points_corpus); */
+    /* printf("\n"); */
 
     points_corpus--;
     uint32_t median = (points_corpus)/2; // if odd, pick the right 
-    printf("The median is %d\n", median);
+    /* printf("The median is %d\n", median); */
 
     // exclude vantage point itself
     if(points_corpus!=1) vp_mu[index_node] = Vptree::kselect_dist_corpus_index(dist + 1, _corpus, _indeces, low + 1, points_corpus, median);
     else vp_mu[index_node] = dist[1];
 
-    printf("Rearanged dist\n");
-    print_dataset_yav(dist, 1, points_corpus+1);
-    printf("The radius/threshold is %lf\n", vp_mu[index_node]);
-    printf("Index of the radius threshold %d\n", _indeces[low+1+median]);
-    printf("Partition corpus based on distance\n");
-    print_dataset_yav(_corpus + low*_dimensions, high-low, _dimensions);
-    printf("\n");
-    print_indeces(_indeces + low, 1, high-low);
-    printf("\n");
+    /* printf("Rearanged dist\n"); */
+    /* print_dataset_yav(dist, 1, points_corpus+1); */
+    /* printf("The radius/threshold is %lf\n", vp_mu[index_node]); */
+    /* printf("Index of the radius threshold %d\n", _indeces[low+1+median]); */
+    /* printf("Partition corpus based on distance\n"); */
+    /* print_dataset_yav(_corpus + low*_dimensions, high-low, _dimensions); */
+    /* printf("\n"); */
+    /* print_indeces(_indeces + low, 1, high-low); */
+    /* printf("\n"); */
 
     free(dist);
+
+    if(height == _target_height_tree && height != _height_tree) {
+#define LOG2(n) log(n)/log(2)
+
+        /* printf("Reached the target. Stopping %d of %d\n", _target_height_tree, _height_tree); */
+        /* print_dataset_yav(vp_coords, _num_nodes_balanced, _dimensions); */
+        /* print_indeces((uint32_t*)vp_index, 1, _num_nodes_balanced); */
+
+        int count = 1;
+
+        /* printf("Max possible size to store leaf values %d\n", _sub_nodes_balanced); */
+
+        // fill the remaining
+        for(int i = low+1; i < high; i++) {
+            memcpy(vp_coords + (index_node+count)*_dimensions, _corpus + (i)*_dimensions, sizeof(double)*_dimensions);
+            vp_index[index_node+count] = _indeces[i];
+            count++;
+        } 
+        /* printf(RED "After\n" RESET); */
+        /* print_dataset_yav(vp_coords, _num_nodes_balanced, _dimensions); */
+        /* print_indeces((uint32_t*)vp_index, 1, _num_nodes_balanced); */
+
+        return;
+    }
 
     height++;
 
@@ -196,19 +236,38 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
 }
 
 void Vptree::searchTree(int current_height, int index_node) {
-    if(vp_index[index_node] == FLAG_NO_LEAF) return;
+    if(vp_index[index_node] == FLAG_NO_LEAF && current_height == _height_tree) return;
+    /* printf("\nIndex node %d\n", index_node); */
+
+    if(current_height == _target_height_tree && current_height != _height_tree) {
+        /* printf(RED "Entered target control\n" RESET); */
+        // calibrate index
+
+        // which node I am starting from zero in the height before reaching target?
+        int offset = index_node + 1 - _count_nodes_before_target;
+        if(offset<0) offset=0;
+        /* printf("Index node init %d. Offset %d\n", index_node, offset); */
+
+        index_node += _sub_nodes_balanced*offset;
+        /* printf("New index node %d\n", index_node); */
+        /* printf(RED "Finished target control\n" RESET); */
+
+    }
 
     double dist = Vptree::points_distance(_target, vp_coords + index_node*_dimensions);
 
-    /* printf("The height is %d\n", height); */
+    /* printf("The height is %d\n", current_height); */
     /* printf("The vantage point coordinates\n"); */
     /* print_dataset_yav(vp_coords + index_node*_dimensions, 1, _dimensions); */
+
+    /* printf("Target\n"); */
+    /* print_dataset_yav(_target, 1, _dimensions); */
 
     // by default a priority queue of pairs is ordered by the first element
     std::pair<double, uint32_t> NodeData;
 
     if (dist < _tau) {
-        /* printf("New item pushed to heap with dist %f and index %d\n\n", dist, vp_index[index_node]); */
+        /* printf("New item pushed to heap with dist %f and index %d\n", dist, vp_index[index_node]); */
         if (heap.size() == _k) heap.pop();
 
         NodeData.first = dist;
@@ -220,20 +279,26 @@ void Vptree::searchTree(int current_height, int index_node) {
     }
     /* printf("The index %d, the furthest distance %f, the dist %f and the radius of the vp %f\n", vp_index[index_node], _tau, dist, vp_mu[index_node]); */
 
+    if(current_height == _target_height_tree && current_height != _height_tree) {
+        /* printf(RED "Reached the target. Stopping %d of %d\n" RESET, _target_height_tree, _height_tree); */
 
-    // Leaf
-    if(current_height == _target_height_tree) {
-        int max_size = pow(2, _target_height_tree - _height_tree);
-        int i = index_node + 1;
-        while(vp_index[i] != FLAG_NO_LEAF && i != max_size) {
-            double dist = Vptree::points_distance(_target, vp_coords + i*_dimensions);
+        /* printf("Max possible size to store leaf values %d\n", _sub_nodes_balanced); */
+
+        int i = 1;
+        while(vp_index[index_node + i] != FLAG_NO_LEAF && i <= _sub_nodes_balanced) {
+            /* printf("The i %d\n", i); */
+            double dist = Vptree::points_distance(_target, vp_coords + (index_node + i)*_dimensions);
+
+            /* printf("Vantage point\n"); */
+            /* print_dataset_yav(vp_coords + (index_node + i)*_dimensions, 1, _dimensions); */
+            /* printf("The index %d, the furthest distance %f, the dist %f and the radius of the vp %f\n", vp_index[index_node + i], _tau, dist, vp_mu[index_node + i]); */
             // should I stick to the priority queue for this comparison?
             if (dist < _tau) {
-                /* printf("New item pushed to heap with dist %f and index %d\n\n", dist, vp_index[index_node]); */
+                /* printf("New item pushed to heap with dist %f and index %d\n\n", dist, vp_index[index_node+i]); */
                 if (heap.size() == _k) heap.pop();
 
                 NodeData.first = dist;
-                NodeData.second = vp_index[index_node];
+                NodeData.second = vp_index[index_node + i];
 
                 heap.push(NodeData);
 
@@ -246,7 +311,10 @@ void Vptree::searchTree(int current_height, int index_node) {
         return;
     }
 
-    if((vp_index[LEFT_CHILD(index_node)] == FLAG_NO_LEAF && vp_index[RIGHT_CHILD(index_node)] == FLAG_NO_LEAF)) return;
+    if(current_height == _height_tree) return;
+
+    // Leaf
+    if((vp_index[LEFT_CHILD(index_node)] == FLAG_NO_LEAF && vp_index[RIGHT_CHILD(index_node)] == FLAG_NO_LEAF) && _target_height_tree == _height_tree) return;
 
     current_height++;
     _count_nodes++;

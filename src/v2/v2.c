@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "main.h"
+#include "v0.h"
 #include "v1.h"
 #include "v2.h"
+#include "utils.h"
 #include <mpi.h>
 #include <math.h>
 #include <vector>
@@ -63,8 +64,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             }
         }
 
-        printf("\nThe corpus set: \n");
-        print_dataset_yav(x, n, d);        
+        /* printf("\nThe corpus set: \n"); */
+        /* print_dataset_yav(x, n, d); */        
     }
 
     int corpus_size_per_proc[numtasks]; 
@@ -140,7 +141,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     MALLOC(double, vpt_buffer, corpus_size_per_proc[rank]);
     memcpy(vpt_buffer, init_buffer, sizeof(double) * corpus_size_per_proc[rank]);
 
-    const float target_height_tree_percent = 1.0;
+    const float target_height_tree_percent = 1;
     Vptree vpt(vpt_buffer, indeces_per_process, m_per_process, d, num_nodes_balanced_per_proc[rank], height_tree[rank], target_height_tree_percent);
 
     free(vpt_buffer);
@@ -376,7 +377,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     printf(CYN "Rank: %d. " RESET "Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
 
-    printf("Total number of nodes visited %d of avaialbe %d\n", vpt.total_nodes_visited, m_per_process*m_per_process);
+    printf("Total number of nodes visited %d of avaialbe %d\n", vpt.total_nodes_visited, m_per_process*n);
 
     if(rank == MASTER) {TIC();}
 
@@ -391,35 +392,4 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     free(ret_per_process.nidx);
 
     return ret_master;
-}
-
-void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *memory_offset) {
-    int remain = n%numtasks;
-    for (int i = 0; i < numtasks; i++) {
-        memory_offset[i] = 0;
-
-        size_per_proc[i] = n/numtasks * d;
-
-        // the remaining n share them like a deck of cards (better load balance)
-        if (remain) {
-            size_per_proc[i] += d;
-            remain--;
-        }
-
-        if(i!= 0) memory_offset[i] = memory_offset[i-1] + size_per_proc[i-1];
-    }
-}
-
-void rotate_left(int *arr, int size) {
-    int temp = arr[0];
-    for(int i = 0; i < size-1; i++) arr[i] = arr[i+1];
-    arr[size-1] = temp;
-}
-
-void adjust_indeces(uint32_t *arr, uint32_t rows, uint32_t cols, int offset) {
-    for(uint32_t i = 0; i < rows; i++) {
-        for(uint32_t j = 0; j < cols; j++) {
-            arr[j + i*cols] += offset; 
-        }
-    }
 }

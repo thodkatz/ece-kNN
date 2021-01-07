@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
-#include "main.h"
+#include "v0.h"
 #include "v1.h"
+#include "utils.h"
 #include <mpi.h>
 #include <math.h>
 
@@ -275,35 +276,3 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     return ret_master;
 }
-
-void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *memory_offset) {
-    int remain = n%numtasks;
-    for (int i = 0; i < numtasks; i++) {
-        memory_offset[i] = 0;
-
-        size_per_proc[i] = n/numtasks * d;
-
-        // the remaining n share them like a deck of cards (better load balance)
-        if (remain) {
-            size_per_proc[i] += d;
-            remain--;
-        }
-
-        if(i!= 0) memory_offset[i] = memory_offset[i-1] + size_per_proc[i-1];
-    }
-}
-
-void rotate_left(int *arr, int size) {
-    int temp = arr[0];
-    for(int i = 0; i < size-1; i++) arr[i] = arr[i+1];
-    arr[size-1] = temp;
-}
-
-void adjust_indeces(uint32_t *arr, uint32_t rows, uint32_t cols, int offset) {
-    for(uint32_t i = 0; i < rows; i++) {
-        for(uint32_t j = 0; j < cols; j++) {
-            arr[j + i*cols] += offset; 
-        }
-    }
-}
-

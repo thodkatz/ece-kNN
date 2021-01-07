@@ -1,5 +1,5 @@
-#ifndef MAIN_H
-#define MAIN_H
+#ifndef UTILS_H
+#define UTILS_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -22,49 +22,25 @@
 #define RED   "\x1B[31m"
 #define RESET "\x1B[0m"
 
-// Definition of the kNN result struct
-typedef struct knnresult{
-  uint32_t    * nidx;    //!< Indices (0-based) of nearest neighbors [m-by-k]
-  double      * ndist;   //!< Distance of nearest neighbors          [m-by-k]
-  uint32_t      m;       //!< Number of query points                 [scalar]
-  uint32_t      k;       //!< Number of nearest neighbors            [scalar]
-} knnresult;
+/*
+ * \brief Elapsed time between two reference points using monotonic clock
+ *
+ * \return Elapsed time in seconds
+ */
+double diff_time(struct timespec, struct timespec);
 
-
-//! Compute k nearest neighbors of each point in X [n-by-d]
-/*!
-
-  Note: If the query point is one of the corpus set points then it is included as the first neighbor.
-
-  \param  x      Corpus data points              [n-by-d]
-  \param  y      Query data points               [m-by-d]
-  \param  n      Number of corpus points         [scalar]
-  \param  m      Number of query points          [scalar]
-  \param  d      Number of dimensions            [scalar]
-  \param  k      Number of neighbors             [scalar]
-
-  \return  The kNN result
-  */
-knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t k);
-
-//! Compute distributed all-kNN of points in X
-/*!
-
-  \param  X      Data points                     [n-by-d]
-  \param  n      Number of data points           [scalar]
-  \param  d      Number of dimensions            [scalar]
-  \param  k      Number of neighbors             [scalar]
-
-  \return  The kNN result
-*/
-knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k);
+/*
+ * \brief Matrix Market format to COO
+ *
+ * source: https://math.nist.gov/MatrixMarket/mmio/c/example_read.c
+ *
+ */
+void mm2coo(int argc, char* argv[], uint32_t **rows, uint32_t **columns, uint32_t nnz, uint32_t n);
 
 /*
  * \brief Transpose matrix
  */
 void transpose(double *src, double *dst, const uint32_t N, const uint32_t M);
-
-
 
 /*
  * \brief Naive quickselect implementation
@@ -104,21 +80,6 @@ double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_
 double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
 
 double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
-
-/*
- * \brief Elapsed time between two reference points using monotonic clock
- *
- * \return Elapsed time in seconds
- */
-double diff_time(struct timespec, struct timespec);
-
-/*
- * \brief Matrix Market format to COO
- *
- * source: https://math.nist.gov/MatrixMarket/mmio/c/example_read.c
- *
- */
-void mm2coo(int argc, char* argv[], uint32_t **rows, uint32_t **columns, uint32_t nnz, uint32_t n);
 
 /*
  * \brief Print 1d array using ; sepatated values format
