@@ -6,6 +6,13 @@
 #include <mpi.h>
 #include <math.h>
 
+/*
+ * Ring-wise communication between processes
+ *
+ * Otherwise, rank 0 is the master and all the others the slaves that listening only the master
+ */
+#define RING
+
 knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
     struct timespec tic;
@@ -103,12 +110,19 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         ret_per_process.nidx[i] = UINT32_MAX;
     }
 
+    double *send_buffer;
     double *curr_buffer;
     double *next_buffer;
     knnresult ret_curr;
 
+#ifndef RING
     MPI_Request req;
     MPI_Status stat;
+#else
+    MPI_Request reqs[2];
+    MPI_Status stats[2];
+    int tag = 1;
+#endif
 
     TIC()
 
@@ -133,6 +147,20 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         // one step ahead. Calculate the next buffer to avoid communication cost
         if (i <= numtasks-2) {
 
+#ifdef RING
+            int prev = rank-1;
+            int next = rank+1;
+            if (rank == 0)  prev = numtasks - 1;
+            if (rank == (numtasks - 1))  next = 0; 
+
+            MALLOC(double, send_buffer, corpus_per_proc[rank]);
+            memcpy(send_buffer, curr_buffer, sizeof(double) * corpus_per_proc[rank]);
+
+            printf("Rank: %d. The send buff is:\n", rank);
+            print_dataset_yav(send_buffer, local_n, d);
+
+            MPI_Isend(curr_buffer, corpus_per_proc[rank], MPI_DOUBLE, prev, tag, MPI_COMM_WORLD, &reqs[0]);
+#endif
             // cycle through the size per proc to fill the distance matrix
             rotate_left(corpus_per_proc, numtasks);
             rotate_left(distance_offset, numtasks);
@@ -147,8 +175,12 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             /* printf("\n"); */
 
             MALLOC(double, next_buffer, corpus_per_proc[rank]);
+#ifndef RING
             MPI_Iscatterv(x, corpus_per_proc, distance_offset, MPI_DOUBLE, next_buffer, corpus_per_proc[rank], MPI_DOUBLE, MASTER, MPI_COMM_WORLD, &req);
-
+#else
+            // TODO Exclude the master process to receive because it already has the data
+            MPI_Irecv(next_buffer, corpus_per_proc[rank], MPI_DOUBLE, next, tag, MPI_COMM_WORLD, &reqs[1]);
+#endif
             isSend = 1;
         }
 
@@ -239,7 +271,14 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 
         if(isSend) {
             //TIC()
+#ifndef RING
             MPI_Wait(&req, &stat);
+#else
+            MPI_Waitall(2, reqs, stats);
+            free(send_buffer);
+            printf("Rank: %d. The next buff is:\n", rank);
+            print_dataset_yav(next_buffer, corpus_per_proc[rank]/d, d);
+#endif
             //TOC(RED "Cost " RESET "for syncing: %lf\n")
         }
 
