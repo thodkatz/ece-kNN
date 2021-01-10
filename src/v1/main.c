@@ -41,10 +41,10 @@ int main(int argc, char *argv[])
 
         TOC(RED "\nTOTAL: " RESET "Time elapsed calculating kNN (seconds): %lf\n")
 
-        printf("\nDistance of kNN\n");
-        print_dataset_yav(ret.ndist, ret.m, k);
-        printf("\nIndeces of kNN\n");
-        print_indeces(ret.nidx, ret.m, k);
+        /* printf("\nDistance of kNN\n"); */
+        /* print_dataset_yav(ret.ndist, ret.m, k); */
+        /* printf("\nIndeces of kNN\n"); */
+        /* print_indeces(ret.nidx, ret.m, k); */
 
         log = fopen("logs/v1_log.txt", "w");
 

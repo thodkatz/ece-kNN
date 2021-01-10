@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)3e4;
-    uint32_t d = 10;
+    uint32_t n = (uint32_t)10;
+    uint32_t d = 4;
     uint32_t m = 8;
     uint32_t k = 3;
     if (m > n) {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     //srand(time(NULL));
     srand(1);
     printf("n = %u, d = %u, m = %u, k = %u\n", n, d, m, k);
-    printf("Corpus array size: %0.3lf MB\n Query array size: %0.3lf MB\n", n*d*8/1e6, m*d*8/1e6);
+    printf("Corpus array size: %0.3lf MB\nQuery array size: %0.3lf MB\n", n*d*8/1e6, m*d*8/1e6);
     printf("Random generated corpus...\n");
 
     double *x, *y;
