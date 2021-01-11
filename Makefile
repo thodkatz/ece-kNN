@@ -1,6 +1,6 @@
 CC=g++
 CCMPI=mpic++
-CFLAGS= -g -pedantic -Wall
+CFLAGS= -O3 -pedantic -Wall
 LDFLAGS= -lopenblas
 
 BIN = bin

@@ -14,7 +14,7 @@
  * 0 --> false
  * 1 --> true 
  */
-#define CBLAS_DDOT 0
+#define CBLAS_DDOT 1
 
 /*
  * Calculate transpose matrix using cblas routine

@@ -8,7 +8,7 @@
 #include <math.h>
 #include <string.h>
 
-#define BLOCKS 50
+#define BLOCKS 15
 
 /*
  * 0 --> query subset of corpus 
@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
     int n = 10;
     int d = 4;
     int m = 8;
-    int k = 3;
+    int k = 10;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
         return -1;
@@ -126,10 +126,10 @@ int main(int argc, char *argv[])
 
     TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
-    printf("\nDistance of kNN\n");
-    print_dataset_yav(ret.ndist, m, k);
-    printf("\nIndeces of kNN\n");
-    print_indeces(ret.nidx, m, k);
+    /* printf("\nDistance of kNN\n"); */
+    /* print_dataset_yav(ret.ndist, m, k); */
+    /* printf("\nIndeces of kNN\n"); */
+    /* print_indeces(ret.nidx, m, k); */
 
     FILE *log;
     log = fopen("logs/v0_log.txt", "w");
