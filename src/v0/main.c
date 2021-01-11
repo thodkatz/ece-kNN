@@ -8,13 +8,15 @@
 #include <math.h>
 #include <string.h>
 
-#define BLOCKS 1
+#define BLOCKS 50
 
 /*
  * 0 --> query subset of corpus 
  * 1 --> distrAll
  */
 #define ALL 1
+
+//#define RANDOM
 
 int main(int argc, char *argv[])
 {
@@ -25,10 +27,10 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    uint32_t n = (uint32_t)10;
-    uint32_t d = 4;
-    uint32_t m = 8;
-    uint32_t k = 3;
+    int n = 10;
+    int d = 4;
+    int m = 8;
+    int k = 3;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
         return -1;
@@ -37,17 +39,16 @@ int main(int argc, char *argv[])
         printf("Number of nearest elements exceeded the number of elements in the corpus set\n");
         //return -1; // should work for that case too
     }
-#if ALL == 1
-    m = n; // symmetric
-#endif
 
+    struct timespec tic;
+    struct timespec toc;
     //srand(time(NULL));
     srand(1);
-    printf("n = %u, d = %u, m = %u, k = %u\n", n, d, m, k);
-    printf("Corpus array size: %0.3lf MB\nQuery array size: %0.3lf MB\n", n*d*8/1e6, m*d*8/1e6);
-    printf("Random generated corpus...\n");
 
     double *x, *y;
+#ifdef RANDOM
+    printf("Random generated corpus...\n");
+
     MALLOC(double, x, n*d);
     MALLOC(double, y, m*d);
 
@@ -56,12 +57,18 @@ int main(int argc, char *argv[])
             x[i*d + j] = (double)(rand()%100);
         }
     }
+#else
+    TIC()
+    x = read_matrix(&n, &d, argc, argv);
+    TOC("Time elasped reading corpus: %lf\n")
+#endif
+    printf("n = %u, d = %u, m = %u, k = %u\n", n, d, m, k);
+    printf("Corpus array size: %0.3lf MB\nQuery array size: %0.3lf MB\n", n*d*8/1e6, m*d*8/1e6);
 
-    FILE *input;
-    input = fopen("logs/input.txt", "w");
-    print_input_file(input, x, n, d);
-    fclose(input);
-    /* print_dataset_yav(x, n, d); */
+#if ALL == 1
+    m = n; // symmetric
+#endif
+
 
     knnresult ret;
     ret.k = k;
@@ -76,8 +83,11 @@ int main(int argc, char *argv[])
     uint32_t block_size = m/blocks; 
     printf("Each block has %u points\n", block_size);
 
-    struct timespec tic;
-    struct timespec toc;
+    FILE *input;
+    input = fopen("logs/input.txt", "w");
+    print_input_file(input, x, n, d);
+    fclose(input);
+    /* print_dataset_yav(x, n, d); */
 
     TIC()
 
@@ -116,10 +126,10 @@ int main(int argc, char *argv[])
 
     TOC("\nTime elapsed calculating kNN total (seconds): %lf\n")
 
-    /* printf("\nDistance of kNN\n"); */
-    /* print_dataset_yav(ret.ndist, m, k); */
-    /* printf("\nIndeces of kNN\n"); */
-    /* print_indeces(ret.nidx, m, k); */
+    printf("\nDistance of kNN\n");
+    print_dataset_yav(ret.ndist, m, k);
+    printf("\nIndeces of kNN\n");
+    print_indeces(ret.nidx, m, k);
 
     FILE *log;
     log = fopen("logs/v0_log.txt", "w");

@@ -29,13 +29,15 @@
  */
 double diff_time(struct timespec, struct timespec);
 
-/*
- * \brief Matrix Market format to COO
- *
- * source: https://math.nist.gov/MatrixMarket/mmio/c/example_read.c
- *
- */
-void mm2coo(int argc, char* argv[], uint32_t **rows, uint32_t **columns, uint32_t nnz, uint32_t n);
+double *read_matrix(int *n, int *d, int argc, char *argv[]);
+
+double *read_corel(FILE *f, char *file_name, int *n, int *d);
+
+double *read_features(FILE *f, int *n, int *d);
+
+double *read_mini(FILE *f, int *n, int *d);
+
+double *read_tv(FILE *f, char *file_name, int *n, int *d);
 
 /*
  * \brief Transpose matrix

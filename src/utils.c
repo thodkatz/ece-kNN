@@ -6,6 +6,7 @@
 #include <cblas.h>
 #include "mmio.h"
 #include "utils.h"
+#include <string.h>
 
 double diff_time (struct timespec start, struct timespec end) {
     uint32_t diff_sec = (end.tv_sec - start.tv_sec);
@@ -18,147 +19,154 @@ double diff_time (struct timespec start, struct timespec end) {
     return (1e9*diff_sec + diff_nsec)/1e9;
 }
 
-void mm2coo(int argc, char *argv[], uint32_t **rows, uint32_t **columns, uint32_t nnz, uint32_t n) {
-    MM_typecode matcode;
-    FILE *f;
-    uint32_t r, c; // MxN dimensions (square matrix M=N) 
-    // double *val; // dont need this. Our matrices are binary 1 or zero
 
-    // expecting a filename to read (./main <filename>)
-    if (argc < 2) {
+double *read_matrix(int *n, int *d, int argc, char *argv[]) {
+    FILE *f;
+    double *x;
+
+    if(argc < 2) {
         printf("Missed command line arguements\n");
-		fprintf(stderr, "Usage: %s [martix-market-filename]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [matrix-filename]\n", argv[0]);
 		exit(1);
 	}
     else {
-        if ((f = fopen(argv[1], "r")) == NULL) { 
+        if((f = fopen(argv[1], "r")) == NULL) { 
             printf("Can't open file\n");
             exit(1);  
         }
     }
 
-    if (mm_read_banner(f, &matcode) != 0) {
-        printf("Could not process Matrix Market banner.\n");
-        exit(1);
-    }
+    if(strstr(argv[1], "corel")!=NULL)              x = read_corel(f, argv[1], n, d);
+    else if(strstr(argv[1], "features")!=NULL)      x = read_features(f, n, d);
+    else if(strstr(argv[1], "MiniBooNE_PID")!=NULL) x = read_mini(f, n, d);
+    else if(strstr(argv[1], "tv")!=NULL)            x = read_tv(f, argv[1], n, d);
 
-    // what MM formats do you support?
-    if (!(mm_is_matrix(matcode) && mm_is_coordinate(matcode) && mm_is_pattern(matcode) && 
-            mm_is_symmetric(matcode))) {
-        printf("Sorry, this application does not support ");
-        printf("Matrix Market type: [%s]\n", mm_typecode_to_str(matcode));
-        exit(1);
-    }
+    fclose(f);
 
-    /* find out size of sparse matrix .... */
-    if ((mm_read_mtx_crd_size(f, &r, &c, &nnz)) !=0) exit(1);
-    //printf("Number of nnz: %u\n", nnz);
-    n = r;
-    //printf("Rows/columns: %u\n", n);
+    return x;
+}
 
-    *rows = (uint32_t*) malloc(nnz * sizeof(uint32_t));
-    *columns = (uint32_t*) malloc(nnz * sizeof(uint32_t));
+double *read_corel(FILE *f, char *file_name, int *n, int *d) {
+    int rows = 0;
+    int cols = 0;
 
-    uint32_t x,y = 0;
-    for (uint32_t i=0; i<nnz; i++) {
-        fscanf(f, "%u %u\n", &x, &y);
-        if (x == y) {
-            nnz--;
-            i--;
-            continue;
+    rows = 68040;
+    if(strcmp(file_name,      "datasets/corel/ColorMoments.asc")==0)   cols = 9;
+    else if(strcmp(file_name, "datasets/corel/CoocTexture.asc")==0)    cols = 16;
+    else if(strcmp(file_name, "datasets/corel/ColorHistogram.asc")==0) cols = 32;
+    else {printf("Not supported corel matrix\nPlease use ColorHistogram or CoocTexture or ColorMoments\n"); exit(-1);}
+        
+    double *x;
+    MALLOC(double, x, rows * cols);
+
+    for(int i = 0; i < rows; i++) {
+        // skip first value
+        int skip;
+        fscanf(f, "%d", &skip);
+        for(int j = 0; j < cols; j++) {
+            if(fscanf(f, "%lf", &x[i*cols + j]) != 1) exit(-1);
         }
-        (*rows)[i] = x;
-        (*columns)[i] = y;
-        (*rows)[i]--;  /* adjust from 1-based to 0-based */
-        (*columns)[i]--;
-
-        //printf("Elements: [%lu, %lu]\n", rows[i], columns[i]);
     }
 
-    printf("Success, MM format is converted to COO\n");
+    *d = cols;
+    *n = rows;
 
-    if (f !=stdin) {
-        fclose(f);
-        //printf("File is successfully closed\n");
-    }
+    return x;
+
 }
 
-// print 2d array in matlab format (row wise)
-void print_dataset(double *array, uint32_t row, uint32_t col) {
-    printf("[ ");
-    for (uint32_t i = 0; i < row; i++) {
-        for (uint32_t j = 0; j < col; j++) {
-            printf("%lf ", array[i*col + j]);
+double *read_features(FILE *f, int *n, int *d) {
+    int rows = 0;
+    int cols = 0;
+
+    char *line;
+    MALLOC(char, line, 1024*1024);
+
+    for(int skip=0;skip<4;skip++){
+        fscanf(f,"%s\n", line);
+    }
+    free(line);
+
+    rows = 106574;
+    cols = 518;
+
+    double *x;
+    MALLOC(double, x, rows * cols);
+
+    for(int i = 0; i < rows; i++) {
+        // skip first value
+        int skip;
+        fscanf(f, "%d,", &skip);
+        for(int j = 0; j < cols; j++) {
+            if(fscanf(f, "%lf,", &x[i*cols + j]) != 1) exit(-1);
         }
-        if (i != row-1) printf("; ");
-        else printf("]\n");
     }
+
+    *d = cols;
+    *n = rows;
+
+    return x;
 }
 
+double *read_mini(FILE *f, int *n, int *d) {
+    int rows = 130064;
+    int cols = 50;
 
-void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col) {
-    for (uint32_t i = 0; i < row; i++) {
-        for (uint32_t j = 0; j < col; j++) {
-            fprintf(f, "%lf ", array[i*col + j]);
+    for(int i=0, skip = 0; i<2; i++){
+        fscanf(f, "%d ", &skip);
+    }
+
+    double *x;
+    MALLOC(double, x, rows * cols);
+
+    for(int i = 0; i < rows; i++) {
+        // skip first value
+        int skip;
+        fscanf(f, "%d ", &skip);
+        for(int j = 0; j < cols; j++) {
+            if(fscanf(f, "%lf ", &x[i*cols + j]) != 1) exit(-1);
         }
-        fprintf(f, "\n");
     }
 
+    *d = cols;
+    *n = rows;
+
+    return x;
 }
 
-// print 2d array in python format (row wise)
-void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
-    for (uint32_t i = 0; i < row; i++)
-    {
-        if (i == 0)
-            printf("[[");
-        else
-            printf(" [");
-        for (uint32_t j = 0; j < col; j++)
-            if (j != col -1) printf("%lf,", array[i*col + j]);
-            else printf("%lf", array[i*col + j]);
-        if (i == row -1)
-            printf("]]\n");
-        else
-            printf("],\n");
-    }
+double *read_tv(FILE *f, char *file_name, int *n, int *d){
+    int rows = 0;
+    int cols = 0;
 
-}
+    if(strcmp(file_name,      "datasets/tv/BBC.txt")==0)      rows = 17720;
+    else if(strcmp(file_name, "datasets/tv/CNN.txt")==0)      rows = 22545;
+    else if(strcmp(file_name, "datasets/tv/NDTV.txt")==0)     rows = 17051;
+    else if(strcmp(file_name, "datasets/tv/CNNIBN.txt")==0)   rows = 3317;
+    else if(strcmp(file_name, "datasets/tv/TIMESNOW.txt")==0) rows = 39252;
+    else printf("Not supported tv matrix\n Please check the filename\n");
 
+    cols = 17;
+        
+    double *x;
+    MALLOC(double, x, rows * cols);
 
-void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
-    for(uint32_t i = 0; i < row; i++)
-    {
-        if(i == 0)
-            printf("[[");
-        else
-            printf(" [");
-        for(uint32_t j = 0; j < col; j++) {
-            if (j != col -1) printf("%d,", array[i*col + j]);
-            else printf("%d", array[i*col + j]);
+    for(int i = 0; i < rows; i++) {
+        // skip first value
+        int skip;
+        double temp;
+        fscanf(f, "%d ", &skip);
+        for(int j = 0; j < cols; j++) {
+            if(fscanf(f, "%d:%lf ", &skip, &x[i*cols + j]) != 2) exit(-1);
         }
-        if(i == row -1)
-            printf("]]\n");
-        else
-            printf("],\n");
+        fscanf(f,"%*[^\n]\n");
     }
+
+    *d = cols;
+    *n = rows;
+
+    return x;
 }
 
-void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col) {
-    for(uint32_t i = 0; i < row; i++)
-    {
-        for(uint32_t j = 0; j < col; j++) fprintf(f, "%lf ", dist[i*col + j]);
-
-            fprintf(f, "\n");
-    }
-
-    for(uint32_t i = 0; i < row; i++)
-    {
-        for(uint32_t j = 0; j < col; j++) fprintf(f, "%u ", indeces[i*col + j]);
-
-        fprintf(f, "\n");
-    }
-}
 
 
 // D = sqrt(sum(X.^2,2) - 2 * X*Y.' + sum(Y.^2,2).');
@@ -438,3 +446,81 @@ void adjust_indeces(uint32_t *arr, uint32_t rows, uint32_t cols, int offset) {
         }
     }
 }
+
+// print 2d array in matlab format (row wise)
+void print_dataset(double *array, uint32_t row, uint32_t col) {
+    printf("[ ");
+    for (uint32_t i = 0; i < row; i++) {
+        for (uint32_t j = 0; j < col; j++) {
+            printf("%lf ", array[i*col + j]);
+        }
+        if (i != row-1) printf("; ");
+        else printf("]\n");
+    }
+}
+
+
+void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col) {
+    for (uint32_t i = 0; i < row; i++) {
+        for (uint32_t j = 0; j < col; j++) {
+            fprintf(f, "%lf ", array[i*col + j]);
+        }
+        fprintf(f, "\n");
+    }
+
+}
+
+// print 2d array in python format (row wise)
+void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
+    for (uint32_t i = 0; i < row; i++)
+    {
+        if (i == 0)
+            printf("[[");
+        else
+            printf(" [");
+        for (uint32_t j = 0; j < col; j++)
+            if (j != col -1) printf("%lf,", array[i*col + j]);
+            else printf("%lf", array[i*col + j]);
+        if (i == row -1)
+            printf("]]\n");
+        else
+            printf("],\n");
+    }
+
+}
+
+
+void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
+    for(uint32_t i = 0; i < row; i++)
+    {
+        if(i == 0)
+            printf("[[");
+        else
+            printf(" [");
+        for(uint32_t j = 0; j < col; j++) {
+            if (j != col -1) printf("%d,", array[i*col + j]);
+            else printf("%d", array[i*col + j]);
+        }
+        if(i == row -1)
+            printf("]]\n");
+        else
+            printf("],\n");
+    }
+}
+
+void print_output_file(FILE *f, double *dist, uint32_t *indeces, uint32_t row, uint32_t col) {
+    for(uint32_t i = 0; i < row; i++)
+    {
+        for(uint32_t j = 0; j < col; j++) fprintf(f, "%lf ", dist[i*col + j]);
+
+            fprintf(f, "\n");
+    }
+
+    for(uint32_t i = 0; i < row; i++)
+    {
+        for(uint32_t j = 0; j < col; j++) fprintf(f, "%u ", indeces[i*col + j]);
+
+        fprintf(f, "\n");
+    }
+}
+
