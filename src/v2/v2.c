@@ -6,13 +6,14 @@
 #include "utils.h"
 #include <mpi.h>
 #include <math.h>
-#include <vector>
-#include <array>
 #include <assert.h>
+#include <string.h>
 
 #define LOG2(n) log(n)/log(2)
 
-knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
+//#define RANDOM
+
+knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, char *argv[]) {
 
     struct timespec tic;
     struct timespec toc;
@@ -44,6 +45,20 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             MPI_Abort(MPI_COMM_WORLD, errc);
         }
 
+#ifdef RANDOM
+        MALLOC(double, x, n*d);
+
+        for (uint32_t i = 0; i< n; i++) {
+            for (uint32_t j = 0; j < d; j++) {
+                x[i*d + j] = (double)(rand()%100);
+            }
+        }
+#else
+        x = read_matrix(&n, &d, argc, argv);
+#endif
+
+        /* printf("\nThe corpus set: \n"); */
+        /* print_dataset_yav(x, n, d); */  
         ret_master.k = k;
         ret_master.m = n;
         MALLOC(double, ret_master.ndist, n*k);
@@ -56,17 +71,13 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
         printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
         printf("Random generated corpus...\n");
 
-        MALLOC(double, x, n*d);
-
-        for (uint32_t i = 0; i< n; i++) {
-            for (uint32_t j = 0; j < d; j++) {
-                x[i*d + j] = (double)(rand()%100);
-            }
-        }
-
-        /* printf("\nThe corpus set: \n"); */
-        /* print_dataset_yav(x, n, d); */        
+      
     }
+
+#ifndef RANDOM
+    MPI_Bcast(&n, 1, MPI_INT, MASTER, MPI_COMM_WORLD);
+    MPI_Bcast(&d, 1, MPI_INT, MASTER, MPI_COMM_WORLD);
+#endif
 
     int corpus_size_per_proc[numtasks]; 
     int distance_offset[numtasks]; 

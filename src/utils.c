@@ -7,6 +7,7 @@
 #include "mmio.h"
 #include "utils.h"
 #include <string.h>
+#include <time.h>
 
 double diff_time (struct timespec start, struct timespec end) {
     uint32_t diff_sec = (end.tv_sec - start.tv_sec);
@@ -20,7 +21,7 @@ double diff_time (struct timespec start, struct timespec end) {
 }
 
 
-double *read_matrix(int *n, int *d, int argc, char *argv[]) {
+double *read_matrix(uint32_t *n, uint32_t *d, int argc, char *argv[]) {
     FILE *f;
     double *x;
 
@@ -46,9 +47,9 @@ double *read_matrix(int *n, int *d, int argc, char *argv[]) {
     return x;
 }
 
-double *read_corel(FILE *f, char *file_name, int *n, int *d) {
-    int rows = 0;
-    int cols = 0;
+double *read_corel(FILE *f, char *file_name, uint32_t *n, uint32_t *d) {
+    uint32_t rows = 0;
+    uint32_t cols = 0;
 
     rows = 68040;
     if(strcmp(file_name,      "datasets/corel/ColorMoments.asc")==0)   cols = 9;
@@ -75,9 +76,9 @@ double *read_corel(FILE *f, char *file_name, int *n, int *d) {
 
 }
 
-double *read_features(FILE *f, int *n, int *d) {
-    int rows = 0;
-    int cols = 0;
+double *read_features(FILE *f, uint32_t *n, uint32_t *d) {
+    uint32_t rows = 0;
+    uint32_t cols = 0;
 
     char *line;
     MALLOC(char, line, 1024*1024);
@@ -108,9 +109,9 @@ double *read_features(FILE *f, int *n, int *d) {
     return x;
 }
 
-double *read_mini(FILE *f, int *n, int *d) {
-    int rows = 130064;
-    int cols = 50;
+double *read_mini(FILE *f, uint32_t *n, uint32_t *d) {
+    uint32_t rows = 130064;
+    uint32_t cols = 50;
 
     for(int i=0, skip = 0; i<2; i++){
         fscanf(f, "%d ", &skip);
@@ -134,9 +135,9 @@ double *read_mini(FILE *f, int *n, int *d) {
     return x;
 }
 
-double *read_tv(FILE *f, char *file_name, int *n, int *d){
-    int rows = 0;
-    int cols = 0;
+double *read_tv(FILE *f, char *file_name, uint32_t *n, uint32_t *d){
+    uint32_t rows = 0;
+    uint32_t cols = 0;
 
     if(strcmp(file_name,      "datasets/tv/BBC.txt")==0)      rows = 17720;
     else if(strcmp(file_name, "datasets/tv/CNN.txt")==0)      rows = 22545;
@@ -416,7 +417,7 @@ int medianThree(double *array, int a, int b, int c) {
         return c;
 }
 
-void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *memory_offset) {
+void memdistr(int n, int d, int numtasks, int *size_per_proc, int *memory_offset) {
     int remain = n%numtasks;
     for (int i = 0; i < numtasks; i++) {
         memory_offset[i] = 0;

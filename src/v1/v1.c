@@ -5,6 +5,7 @@
 #include "utils.h"
 #include <mpi.h>
 #include <math.h>
+#include <string.h>
 
 /*
  * Ring-wise communication between processes
@@ -13,7 +14,9 @@
  */
 #define RING
 
-knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
+//#define RANDOM
+
+knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, char *argv[]) {
 
     struct timespec tic;
     struct timespec toc;
@@ -40,18 +43,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             MPI_Abort(MPI_COMM_WORLD, errc);
         }
 
-        ret_master.k = k;
-        ret_master.m = n;
-        MALLOC(double, ret_master.ndist, n*k);
-        MALLOC(uint32_t, ret_master.nidx, n*k);
-
-        //srand(time(NULL));
-        srand(1);
-        printf("n = %u, d = %u, k = %u\n", n, d, k);
-        printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
-        printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
-        printf("Random generated corpus...\n");
-
+#ifdef RANDOM
         MALLOC(double, x, n*d);
 
         for (uint32_t i = 0; i< n; i++) {
@@ -59,21 +51,41 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
                 x[i*d + j] = (double)(rand()%100);
             }
         }
+#else
+        x = read_matrix(&n, &d, argc, argv);
+#endif
+        //printf("\nThe corpus set: \n");
+        //print_dataset_yav(x, n, d);        
 
-        /* printf("\nThe corpus set: \n"); */
-        /* print_dataset_yav(x, n, d); */        
+        ret_master.k = k;
+        ret_master.m = n;
+        MALLOC(double, ret_master.ndist, n*k);
+        MALLOC(uint32_t, ret_master.nidx, n*k);
+
+        //srand(time(NULL));
+        srand(1);
+        printf("Rank %d, n = %d, d = %d, k = %d\n", rank, n, d, k);
+        printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
+        printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
+        printf("Random generated corpus...\n");
+
     }
+
+#ifndef RANDOM
+    MPI_Bcast(&n, 1, MPI_INT, MASTER, MPI_COMM_WORLD);
+    MPI_Bcast(&d, 1, MPI_INT, MASTER, MPI_COMM_WORLD);
+#endif
 
     int corpus_per_proc[numtasks]; 
     int distance_offset[numtasks]; 
     memdistr(n, d, numtasks, corpus_per_proc, distance_offset); // configure the processes' memory chunks of the nxd corpus set
 
     /* if (rank == MASTER){ */
-    /* printf("The size per process\n"); */
-    /* for(int i = 0; i < numtasks; i++) printf("%d ", corpus_per_proc[i]); */
-    /* printf("\n"); */
-    /* printf("The distance_offset per process\n"); */
-    /* for(int i = 0; i < numtasks; i++) printf("%d ", distance_offset[i]); */
+	    /* printf("The size per process\n"); */
+	    /* for(int i = 0; i < numtasks; i++) printf("%d ", corpus_per_proc[i]); */
+	    /* printf("\n"); */
+	    /* printf("The distance_offset per process\n"); */ 
+	    /* for(int i = 0; i < numtasks; i++) printf("%d ", distance_offset[i]); */ 
     /* } */
 
     double *init_buffer;
@@ -156,23 +168,14 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
             MALLOC(double, send_buffer, corpus_per_proc[rank]);
             memcpy(send_buffer, curr_buffer, sizeof(double) * corpus_per_proc[rank]);
 
-            printf("Rank: %d. The send buff is:\n", rank);
-            print_dataset_yav(send_buffer, local_n, d);
+            //printf("Rank: %d. The send buff is:\n", rank);
+            //print_dataset_yav(send_buffer, local_n, d);
 
-            MPI_Isend(curr_buffer, corpus_per_proc[rank], MPI_DOUBLE, prev, tag, MPI_COMM_WORLD, &reqs[0]);
+            MPI_Isend(send_buffer, corpus_per_proc[rank], MPI_DOUBLE, prev, tag, MPI_COMM_WORLD, &reqs[0]);
 #endif
             // cycle through the size per proc to fill the distance matrix
             rotate_left(corpus_per_proc, numtasks);
             rotate_left(distance_offset, numtasks);
-
-            /* if (rank == MASTER){ */
-            /*     printf("The size per process\n"); */
-            /*     for(int i = 0; i < numtasks; i++) printf("%d ", corpus_per_proc[i]); */
-            /*     printf("\n"); */
-            /*     printf("The distance_offset per process\n"); */
-            /*     for(int i = 0; i < numtasks; i++) printf("%d ", distance_offset[i]); */
-            /* } */
-            /* printf("\n"); */
 
             MALLOC(double, next_buffer, corpus_per_proc[rank]);
 #ifndef RING
@@ -276,8 +279,8 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
 #else
             MPI_Waitall(2, reqs, stats);
             free(send_buffer);
-            printf("Rank: %d. The next buff is:\n", rank);
-            print_dataset_yav(next_buffer, corpus_per_proc[rank]/d, d);
+            //printf("Rank: %d. The next buff is:\n", rank);
+            //print_dataset_yav(next_buffer, corpus_per_proc[rank]/d, d);
 #endif
             //TOC(RED "Cost " RESET "for syncing: %lf\n")
         }
@@ -292,7 +295,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k) {
     free(init_buffer);
     if(rank == MASTER) free(x);
 
-    printf("\n");
+    //printf("\n");
 
     /* printf("\nRank %d. Distance of kNN\n", rank); */
     /* print_dataset_yav(ret_per_process.ndist, ret_per_process.m, k); */

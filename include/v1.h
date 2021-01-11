@@ -17,13 +17,13 @@
 
   \return  The kNN result
 */
-knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k);
+knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, char *argv[]);
 
 /* 
  * \brief Divide an array nxd to a fair amount to each process and track the size and the memory displacement
  *
  */
-void memdistr(uint32_t n, uint32_t d, int numtasks, int *size_per_proc, int *memory_offset);
+void memdistr(int n, int d, int numtasks, int *size_per_proc, int *memory_offset);
 
 /*
  * \brief Shift elements of an array one time to the left

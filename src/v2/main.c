@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     TIC()
 
     // the return is meaningful only for the MASTER
-    ret = distrAllkNN(x, n, d, k);
+    ret = distrAllkNN(x, n, d, k, argc, argv);
 
     if (rank == MASTER) {
 

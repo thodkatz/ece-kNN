@@ -1,0 +1,53 @@
+[cn6:31912] *** Process received signal ***
+[cn19:03716] *** Process received signal ***
+[cn19:03716] Signal: Segmentation fault (11)
+[cn19:03716] Signal code: Address not mapped (1)
+[cn19:03716] Failing at address: (nil)
+srun: error: cn19: task 5: Segmentation fault
+[cn6:31913] *** Process received signal ***
+[cn6:31913] Signal: Segmentation fault (11)
+[cn6:31913] Signal code: Address not mapped (1)
+[cn6:31913] Failing at address: (nil)
+[cn6:31912] Signal: Segmentation fault (11)
+[cn6:31912] Signal code: Address not mapped (1)
+[cn6:31912] Failing at address: (nil)
+[cn6:31913] [ 0] /usr/lib64/libpthread.so.0(+0xf630)[0x7fea16a98630]
+srun: Terminating job step 869383.0
+[cn6:31912] [ 0] /usr/lib64/libpthread.so.0(+0xf630)[0x7f3163424630]
+[cn6:31912] [ 1] /usr/lib64/libc.so.6(+0x14f3b8)[0x7f31631963b8]
+[cn6:31912] [ 2] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x404758]
+[cn6:31912] [ 3] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x40150d]
+[cn6:31913] [ 1] /usr/lib64/libc.so.6(+0x14f3b8)[0x7fea1680a3b8]
+[cn6:31913] [ 2] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x404758]
+[cn6:31913] [ 3] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x40150d]
+[cn6:31913] [ 4] /usr/lib64/libc.so.6(__libc_start_main+0xf5)[0x7fea166dd555]
+[cn6:31913] [ 5] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x401665]
+[cn6:31913] *** End of error message ***
+[cn6:31912] [ 4] /usr/lib64/libc.so.6(__libc_start_main+0xf5)[0x7f3163069555]
+[cn6:31912] [ 5] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x401665]
+[cn6:31912] *** End of error message ***
+slurmstepd: error: *** STEP 869383.0 ON cn6 CANCELLED AT 2021-01-11T23:55:09 ***
+[cn20:13183] *** Process received signal ***
+[cn20:13183] Signal: Segmentation fault (11)
+[cn20:13183] Signal code: Address not mapped (1)
+[cn20:13183] Failing at address: (nil)
+[cn19:03716] [ 0] /usr/lib64/libpthread.so.0(+0xf630)[0x7fdbd23f6630]
+[cn19:03716] [ 1] /usr/lib64/libc.so.6(+0x14f3b8)[0x7fdbd21683b8]
+[cn19:03716] [ 2] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x404758]
+[cn19:03716] [ 3] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x40150d]
+[cn19:03716] [ 4] /usr/lib64/libc.so.6(__libc_start_main+0xf5)[0x7fdbd203b555]
+[cn19:03716] [ 5] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x401665]
+[cn19:03716] *** End of error message ***
+[cn20:13183] [ 0] /usr/lib64/libpthread.so.0(+0xf630)[0x7f0e83de1630]
+[cn20:13183] [ 1] /usr/lib64/libc.so.6(+0x14f3b8)[0x7f0e83b533b8]
+[cn20:13183] [ 2] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x404758]
+[cn20:13183] [ 3] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x40150d]
+srun: error: cn12: task 4: Terminated
+[cn20:13183] [ 4] /usr/lib64/libc.so.6(__libc_start_main+0xf5)[0x7f0e83a26555]
+[cn20:13183] [ 5] /mnt/scratch_b/users/k/katzalis/ece-kNN/./bin/v1[0x401665]
+[cn20:13183] *** End of error message ***
+srun: error: cn6: tasks 0-1: Terminated
+srun: error: cn6: tasks 2-3: Segmentation fault
+srun: error: cn20: task 6: Terminated
+srun: error: cn20: task 7: Segmentation fault
+srun: Force Terminated job step 869383.0

@@ -1,11 +1,7 @@
 #!/bin/bash
 #SBATCH --partition=batch
-#SBATCH --ntasks-per-node=20
-#SBATCH --nodes=1
-#SBATCH --time=1:00:00
+#SBATCH --ntasks=8
+#SBATCH --time=1:00
+#SBATCH --output=./hpc/slurm/%j.out
 
-module load gcc openmpi
-
-mpicc example.c -o example
-
-srun ./example
+srun ./bin/v1 datasets/corel/ColorHistogram.asc

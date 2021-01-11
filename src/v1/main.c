@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
-    uint32_t n = (uint32_t)10;
+    uint32_t n = 10;
     uint32_t d = 4;
     uint32_t k = 3;
 
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     TIC()
 
     // the return is meaningful only for the MASTER
-    ret = distrAllkNN(x, n, d, k);
+    ret = distrAllkNN(x, n, d, k, argc, argv);
 
     if (rank == MASTER) {
 

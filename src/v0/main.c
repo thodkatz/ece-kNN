@@ -27,10 +27,10 @@ int main(int argc, char *argv[])
 
     printf("\n<----------Version 0---------->\n");
 
-    int n = 10;
-    int d = 4;
-    int m = 8;
-    int k = 10;
+    uint32_t n = 10;
+    uint32_t d = 4;
+    uint32_t m = 8;
+    uint32_t k = 10;
     if (m > n) {
         printf("Number of query elements exceeded the number of elements in the corpus set\n");
         return -1;

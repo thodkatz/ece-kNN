@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
 #define MALLOC(type, x, len) if((x = (type*)malloc(len * sizeof(type))) == NULL) \
                                 {printf("Bad alloc\n"); exit(1);}
@@ -29,15 +30,15 @@
  */
 double diff_time(struct timespec, struct timespec);
 
-double *read_matrix(int *n, int *d, int argc, char *argv[]);
+double *read_matrix(uint32_t *n, uint32_t *d, int argc, char *argv[]);
 
-double *read_corel(FILE *f, char *file_name, int *n, int *d);
+double *read_corel(FILE *f, char *file_name, uint32_t *n, uint32_t *d);
 
-double *read_features(FILE *f, int *n, int *d);
+double *read_features(FILE *f, uint32_t *n, uint32_t *d);
 
-double *read_mini(FILE *f, int *n, int *d);
+double *read_mini(FILE *f, uint32_t *n, uint32_t *d);
 
-double *read_tv(FILE *f, char *file_name, int *n, int *d);
+double *read_tv(FILE *f, char *file_name, uint32_t *n, uint32_t *d);
 
 /*
  * \brief Transpose matrix

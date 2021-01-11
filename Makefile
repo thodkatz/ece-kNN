@@ -3,6 +3,7 @@ CCMPI=mpic++
 CFLAGS= -O3 -pedantic -Wall
 LDFLAGS= -lopenblas
 
+
 BIN = bin
 DIRSRC = src
 DIR_v0 = $(DIRSRC)/v0
@@ -17,12 +18,15 @@ INC = -I include
 all: v0 v1 v2
 
 v0: $(SRC_v0)
+	[-d bin] || mkdir -p bin
 	$(CC) $(CFLAGS) $^ $(INC) -o $(BIN)/$@ $(LDFLAGS)
 
 v1: $(SRC_v1)
+	[-d bin] || mkdir -p bin
 	$(CCMPI) $(CFLAGS) $^ $(INC) -o $(BIN)/$@ $(LDFLAGS)
 
 v2: $(SRC_v2)
+	[-d bin] || mkdir -p bin
 	$(CCMPI) $(CFLAGS) $^ $(INC) -o $(BIN)/$@ $(LDFLAGS)
 
 .PHONY: clean v0 v1 v2
