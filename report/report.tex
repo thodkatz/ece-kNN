@@ -19,9 +19,9 @@
 %\setlength{\parindent}{1em}
 %\setlength{\parskip}{1em}\title{Εργασία Στατιστικής}
 
-\title{\textbf{Parallel and Distributed Systems \\ Vertexwise triangle counting}}
+\title{\textbf{Parallel and Distributed Systems \\ Parallel k-Nearest Neighbors}}
 \author{Θεόδωρος Κατζάλης \\ ΑΕΜ:9282 \\ katzalis@auth.gr}
-\date{6/12/2020}
+\date{13/1/2020}
 
 \begin{document}
 
@@ -36,23 +36,73 @@
 \section{Introduction}
 \vspace{0.2cm}
 
-% \begin{figure}[h!]
-%      \begin{subfigure}[b]{0.33\textwidth}
-%          \centering
-%          \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/belgium/v3.png}
-%     \caption{V3 binary search}
-%      \end{subfigure}
-%      \hfill
-%      \begin{subfigure}[b]{0.33\textwidth}
-%          \centering
-%          \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/belgium/v4_binary.png}
-%          \caption{V4 binary search}
-%      \end{subfigure}
-%      \begin{subfigure}[b]{0.33\textwidth}
-%          \centering
-%          \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/belgium/v4_linear.png}
-%          \caption{V4 linear search} 
-%      \end{subfigure}
-% \end{figure}
+\section{Performance data}
+
+\begin{figure}[h!]
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/corel/histo.png}
+    \caption{histo}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/corel/moments.png}
+         \caption{moments}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/corel/texture.png}
+         \caption{texture} 
+     \end{subfigure}
+\end{figure}
+
+
+\begin{figure}[h!]
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/black_sheep.png}
+    \caption{features}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/mini.png}
+         \caption{mini}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/tv/bbc.png}
+         \caption{bbc} 
+     \end{subfigure}
+\end{figure}
+
+
+\begin{figure}[h!]
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/tv/cnnibn.png}
+    \caption{cnnibn}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/tv/cnn.png}
+         \caption{cnn}
+     \end{subfigure}
+     \begin{subfigure}[b]{0.33\textwidth}
+         \centering
+         \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/tv/ndtv.png}
+         \caption{ndtv} 
+     \end{subfigure}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[height=.4\textheight, width=\textwidth, keepaspectratio]{assets/tv/timesnow.png}
+    \caption{timesnow}
+\end{figure}
+
+For ccnibn. Check the twenty process performance. Cblas acceleration. The slices are too small and cblas routines are not utilised.
 
 \end{document}
