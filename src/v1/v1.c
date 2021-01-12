@@ -28,9 +28,10 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
     knnresult ret_master;
 
     if (rank == MASTER) {
-        printf(CYN "==>" RESET " Running on " RED "MASTER" RESET " process...\n");
-        printf(CYN "==>" RESET " Total number of processes: %d\n", numtasks);
-        printf(CYN "==>" RESET " VERSION 1\n");
+        //printf(CYN "==>" RESET " Running on " RED "MASTER" RESET " process...\n");
+        //printf(CYN "==>" RESET " Total number of processes: %d\n", numtasks);
+        printf("%d\n", numtasks);
+        //printf(CYN "==>" RESET " VERSION 1\n");
 
         if (k > n) {
             printf(RED "Error: " RESET "Number of nearest elements exceeded the number of elements in the corpus set\n");
@@ -64,10 +65,11 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
 
         //srand(time(NULL));
         srand(1);
-        printf("Rank %d, n = %d, d = %d, k = %d\n", rank, n, d, k);
-        printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
-        printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
-        printf("Random generated corpus...\n");
+        //printf("n = %d, d = %d, k = %d\n", rank, n, d, k);
+        printf("%d\n", k);
+        //printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
+        //printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
+        //printf("Random generated corpus...\n");
 
     }
 
@@ -190,7 +192,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
 
         ret_curr = kNN(curr_buffer, init_buffer, local_n, m_per_process, d, k);
         free(curr_buffer);
-        printf("\n");
+        //printf("\n");
 
         /* printf("\nIndeces of kNN ret curr before\n"); */
         /* print_indeces(ret_curr.nidx, ret_curr.m, k); */
@@ -303,15 +305,15 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
     /* print_indeces(ret_per_process.nidx, ret_per_process.m, k); */
 
     clock_gettime(CLOCK_MONOTONIC, &toc);
-    printf(CYN "Rank: %d. " RESET "Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
+    //printf(CYN "Rank: %d. " RESET "Time elapsed calculating per process kNN (seconds): %lf\n", rank, diff_time(tic, toc));
 
-    if(rank == MASTER) {TIC();}
+    //if(rank == MASTER) {TIC();}
 
     // Gather to root
     MPI_Gatherv(ret_per_process.ndist, kNN_per_proc[rank], MPI_DOUBLE, ret_master.ndist, kNN_per_proc, kNN_offset, MPI_DOUBLE, MASTER, MPI_COMM_WORLD);
     MPI_Gatherv(ret_per_process.nidx, kNN_per_proc[rank], MPI_INT, ret_master.nidx, kNN_per_proc, kNN_offset, MPI_INT, MASTER, MPI_COMM_WORLD);
 
-    if(rank == MASTER) {TOC(RED "\nCOST " RESET "Gatherv: %lf\n")}
+    //if(rank == MASTER) {TOC(RED "\nCOST " RESET "Gatherv: %lf\n")}
 
     free(ret_per_process.ndist);
     free(ret_per_process.nidx);

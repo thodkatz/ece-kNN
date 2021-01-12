@@ -21,10 +21,6 @@
 // assume that kNN including itself 
 knnresult kNN_vptree(Vptree &vpt, double *y, int n, uint32_t m, uint32_t d, uint32_t k) {
 
-    /* printf("Entering knn function, m:%d\n", m); */
-    /* printf("The y is \n"); */
-    /* print_dataset_yav(y, m, d); */
-
     knnresult ret;
     MALLOC(double, ret.ndist, m*MIN(k, n));
     MALLOC(uint32_t, ret.nidx, m*MIN(k, n));
@@ -44,10 +40,8 @@ knnresult kNN_vptree(Vptree &vpt, double *y, int n, uint32_t m, uint32_t d, uint
         vpt.searchKNN(ret.ndist + MIN(k,n)*i, ret.nidx + MIN(k,n)*i, target, MIN(n,k));
         free(target);
 
-        /* print_dataset_yav(ret.ndist + MIN(n,k)*i, 1, MIN(n,k)); */
-        /* print_indeces(ret.nidx + MIN(n,k)*i, 1, MIN(n,k)); */
     }
 
-    TOC("Time elapsed calculating kNN vp-tree (seconds): %lf\n")
+    //TOC("Time elapsed calculating kNN vp-tree (seconds): %lf\n")
     return ret;
 }

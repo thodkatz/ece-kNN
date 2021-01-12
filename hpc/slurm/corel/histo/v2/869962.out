@@ -1,0 +1,56 @@
+--------------------------------------------------------------------------
+WARNING: Open MPI failed to TCP connect to a peer MPI process.  This
+should not happen.
+
+Your Open MPI job may now fail.
+
+  Local host: cn8
+  PID:        17466
+  Message:    connect() to 10.4.96.18:1026 failed
+  Error:      Operation now in progress (115)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: Open MPI failed to TCP connect to a peer MPI process.  This
+should not happen.
+
+Your Open MPI job may now fail.
+
+  Local host: cn16
+  PID:        2725
+  Message:    connect() to 10.4.96.18:1040 failed
+  Error:      Operation now in progress (115)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: Open MPI failed to TCP connect to a peer MPI process.  This
+should not happen.
+
+Your Open MPI job may now fail.
+
+  Local host: cn16
+  PID:        2726
+  Message:    connect() to 10.4.96.18:1041 failed
+  Error:      Operation now in progress (115)
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+WARNING: Open MPI failed to TCP connect to a peer MPI process.  This
+should not happen.
+
+Your Open MPI job may now fail.
+
+  Local host: cn16
+  PID:        2727
+  Message:    connect() to 10.4.96.18:1027 failed
+  Error:      Operation now in progress (115)
+--------------------------------------------------------------------------
+srun: got SIGCONT
+slurmstepd: error: *** JOB 869962 ON cn8 CANCELLED AT 2021-01-12T13:41:26 ***
+slurmstepd: error: *** STEP 869962.0 ON cn8 CANCELLED AT 2021-01-12T13:41:26 ***
+srun: forcing job termination
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+srun: error: cn8: tasks 0-4: Terminated
+srun: Terminating job step 869962.0
+srun: error: cn19: tasks 17-19: Terminated
+srun: error: cn18: tasks 13-16: Terminated
+srun: error: cn17: tasks 9-12: Terminated
+srun: error: cn16: tasks 5-8: Terminated
+srun: Force Terminated job step 869962.0

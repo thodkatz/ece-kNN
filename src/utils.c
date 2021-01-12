@@ -249,7 +249,7 @@ double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, u
 
 // D' = sqrt(sum(X.^2,2).' - 2 * Y * X.' + sum(Y.^2, 2))
 double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m) {
-    printf("Calculating distance matrix mxn approach [%u, %u]\n", m, n);
+    //printf("Calculating distance matrix mxn approach [%u, %u]\n", m, n);
     struct timespec tic;
     struct timespec toc;
 

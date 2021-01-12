@@ -88,7 +88,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 #elif MATRIX == 2
     double *distance = euclidean_distance_notrans(x, y, n, d, m);
 #endif
-    TOC("Time elapsed calculating distance matrix (seconds): %lf\n")
+    //TOC("Time elapsed calculating distance matrix (seconds): %lf\n")
 
 #if MATRIX == 1
     /* printf("\nThe distance matrix n x m: \n"); */
@@ -114,7 +114,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 
         free(distance);
 
-        TOC("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n")
+        //TOC("Time elapsed calculating transpose distance mxn matrix (seconds): %lf\n")
 
         /* printf("\nThe transpose distance matrix m x n: \n"); */
         /* print_dataset_yav(distance_trans, m, n); */
@@ -123,7 +123,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
 #endif
 
     int isFirst = 1; // indeces 1 or 0 based?
-    printf("Sorting distance matrix until %uth element...\n", k);
+    ////printf("Sorting distance matrix until %uth element...\n", k);
 
     TIC()
 
@@ -200,7 +200,7 @@ knnresult kNN(double *x, double *y, uint32_t n, uint32_t m, uint32_t d, uint32_t
     free(distance);
 #endif
 
-    TOC("Time elapsed calculating kNN given distance matrix (seconds): %lf\n")
+    //TOC("Time elapsed calculating kNN given distance matrix (seconds): %lf\n")
 
     /* if (k>n) k = n; */
     /* printf("\nDistance of kNN\n"); */
