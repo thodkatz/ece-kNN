@@ -68,11 +68,11 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
 
     _count_nodes_before_target = pow(2,_target_height_tree-1);
     assert(_target_height_tree-1>=0);
-    /* struct timespec tic; */
-    /* struct timespec toc; */
-    /* TIC() */    
+    struct timespec tic;
+    struct timespec toc;
+    TIC()    
     Vptree::makeTree(1, 0, n, 0);
-    //TOC("Time elasped making tree %lf\n");
+    TOC("Time elasped making tree %lf\n");
 }
 
 void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {

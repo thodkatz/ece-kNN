@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-data_seq = genfromtxt('../../hpc/slurm/tv/timesnow/output_seq.txt', delimiter=' ')
-log_v1 = genfromtxt('../../hpc/slurm/tv/timesnow/v1/output.txt', delimiter=' ')
-log_v2 = genfromtxt('../../hpc/slurm/tv/timesnow/v2/output.txt', delimiter=' ')
+data_seq = genfromtxt('../../hpc/slurm/features/output_seq.txt', delimiter=' ')
+log_v1 = genfromtxt('../../hpc/slurm/features/v1/output.txt', delimiter=' ')
+log_v2 = genfromtxt('../../hpc/slurm/features/v2/output.txt', delimiter=' ')
 
-processes = [4, 8, 12, 16, 20]
+processes = [8, 12, 16, 20, 24]
 neighbors = [10, 40, 70, 100]
 
 data_v0 = np.arange(4, dtype = np.double);
@@ -27,7 +27,7 @@ for i in range(len(log_v1)):
     if(i%12 == 0):
         count = 0
     if(i%3 == 0):
-        id_proc = int(log_v1[i]/4 -1)
+        id_proc = int((log_v1[i]-4)/4 -1)
     if(i%3 == 1):
         k = log_v1[i]
     if(i%3 == 2):
@@ -38,7 +38,7 @@ for i in range(len(log_v2)):
     if(i%12 == 0):
         count = 0
     if(i%3 == 0):
-        id_proc = int(log_v2[i]/4 -1)
+        id_proc = int((log_v2[i]-4)/4 -1)
     if(i%3 == 1):
         k = log_v2[i]
     if(i%3 == 2):
@@ -69,8 +69,8 @@ plt.xlabel('Processors', fontsize=12, labelpad=10)
 plt.ylabel("Time (s)", fontsize=12, labelpad=10)
 plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 plt.grid(True);
-plt.xticks(np.arange(0, 22, 2))
-plt.yticks(np.arange(0, 40, 5))
+plt.xticks(np.arange(0, 26, 2))
+#plt.yticks(np.arange(0, 40, 5))
 
 plt.subplot(312)
 plt.plot(neighbors, data_v1[0], 'o', linestyle='--', marker= 'o',label = '4')
@@ -85,7 +85,7 @@ plt.ylabel("V1 Time (s)", fontsize=12, labelpad=10)
 plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 plt.grid(True);
 plt.xticks(np.arange(0, 110, 10))
-plt.yticks(np.arange(0, 14, 1))
+#plt.yticks(np.arange(0, 14, 1))
 
 plt.subplot(313)
 plt.plot(neighbors, data_v2[0], 'o', linestyle='--', marker= 'o',label = '4')
@@ -100,7 +100,7 @@ plt.ylabel("V2 Time (s)", fontsize=12, labelpad=10)
 plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 plt.grid(True);
 plt.xticks(np.arange(0, 110, 10))
-plt.yticks(np.arange(0, 10, 1))
+#plt.yticks(np.arange(0, 10, 1))
 
 
 plt.show()

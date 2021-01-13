@@ -14,7 +14,7 @@
  */
 #define RING
 
-//#define RANDOM
+#define RANDOM
 
 knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, char *argv[]) {
 
@@ -28,10 +28,10 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
     knnresult ret_master;
 
     if (rank == MASTER) {
-        //printf(CYN "==>" RESET " Running on " RED "MASTER" RESET " process...\n");
-        //printf(CYN "==>" RESET " Total number of processes: %d\n", numtasks);
+        printf(CYN "==>" RESET " Running on " RED "MASTER" RESET " process...\n");
+        printf(CYN "==>" RESET " Total number of processes: %d\n", numtasks);
         printf("%d\n", numtasks);
-        //printf(CYN "==>" RESET " VERSION 1\n");
+        printf(CYN "==>" RESET " VERSION 1\n");
 
         if (k > n) {
             printf(RED "Error: " RESET "Number of nearest elements exceeded the number of elements in the corpus set\n");
@@ -47,6 +47,10 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
 #ifdef RANDOM
         MALLOC(double, x, n*d);
 
+        //srand(time(NULL));
+        srand(1);
+
+        //printf("Random generated corpus...\n");
         for (uint32_t i = 0; i< n; i++) {
             for (uint32_t j = 0; j < d; j++) {
                 x[i*d + j] = (double)(rand()%100);
@@ -63,13 +67,10 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
         MALLOC(double, ret_master.ndist, n*k);
         MALLOC(uint32_t, ret_master.nidx, n*k);
 
-        //srand(time(NULL));
-        srand(1);
-        //printf("n = %d, d = %d, k = %d\n", rank, n, d, k);
-        printf("%d\n", k);
-        //printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
-        //printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
-        //printf("Random generated corpus...\n");
+        printf("n = %d, d = %d, k = %d\n", n, d, k);
+        //printf("%d\n", k);
+        printf("Corpus array size: %0.3lf MB\n", n*d*8/1e6);
+        printf("Total distance matrix size: %0.3lf MB\n", n*n*8/1e6);
 
     }
 

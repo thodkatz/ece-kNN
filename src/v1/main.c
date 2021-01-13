@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
 
     uint32_t n = 1e5;
-    uint32_t d = 40;
+    uint32_t d = 4;
     uint32_t k = 10;
 
     if(argc<3) {
