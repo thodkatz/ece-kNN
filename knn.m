@@ -3,7 +3,7 @@ v0 = dlmread('logs/v0_log.txt');
 v1 = dlmread('logs/v1_log.txt');
 v2 = dlmread('logs/v2_log.txt');
 
-k = 3;
+[rows, k] = size(v0);
 
 %tic
 %D = sqrt(sum(X.^2,2) - 2 * X*X.' + sum(X.^2,2).');

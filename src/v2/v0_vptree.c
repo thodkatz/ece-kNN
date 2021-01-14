@@ -9,16 +9,6 @@
 #include "utils.h"
 #include "Vptree.h"
 
-
-/*
- * Calculate dot product using cblas routine
- *
- * 0 --> false
- * 1 --> true 
- */
-#define CBLAS_DDOT 1
-
-// assume that kNN including itself 
 knnresult kNN_vptree(Vptree &vpt, double *y, int n, uint32_t m, uint32_t d, uint32_t k) {
 
     knnresult ret;

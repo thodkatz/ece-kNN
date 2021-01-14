@@ -17,6 +17,7 @@
 #define FLAG_NO_LEAF -1
 #define LEFT_CHILD(index) index*2 + 1
 #define RIGHT_CHILD(index) index*2 + 2
+
 #define SAMPLE_SIZE 5 // the size of the random sample used to evaluate the vantage point
 
 void Vptree::init_before_search(int n, int num_nodes_balanced, int height_tree, float target_height_percent, double *vp_mu, double *vp_coords, int *vp_index) {
@@ -68,6 +69,7 @@ Vptree::Vptree(double *corpus, uint32_t *indeces, uint32_t n, uint32_t dimension
 
     _count_nodes_before_target = pow(2,_target_height_tree-1);
     assert(_target_height_tree-1>=0);
+
     struct timespec tic;
     struct timespec toc;
     TIC()    
@@ -131,7 +133,6 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
 
     if(height == _target_height_tree && height != _height_tree) {
 #define LOG2(n) log(n)/log(2)
-
         int count = 1;
 
         // fill the remaining
@@ -140,14 +141,12 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
             vp_index[index_node+count] = _indeces[i];
             count++;
         } 
-
         return;
     }
 
     height++;
 
     makeTree(height, low + 1, low + 1 + median, LEFT_CHILD(index_node)); 
-
     makeTree(height, low + 1 + median, high, RIGHT_CHILD(index_node));
 
     return;
@@ -156,6 +155,7 @@ void Vptree::makeTree(int height, uint32_t low, uint32_t high, int index_node) {
 void Vptree::searchTree(int current_height, int index_node) {
     if(vp_index[index_node] == FLAG_NO_LEAF && current_height == _height_tree) return;
 
+    // in case we stopped the tree creation sooner the leaves are stored in a contiguous way after the last vp
     if(current_height == _target_height_tree && current_height != _height_tree) {
         // calibrate index
 
@@ -182,6 +182,7 @@ void Vptree::searchTree(int current_height, int index_node) {
         if (heap.size() == _k) _tau = heap.top().first;
     }
 
+    // in case we stopped the tree creation sooner the leaves are stored in a contiguous way after the last vp
     if(current_height == _target_height_tree && current_height != _height_tree) {
         int i = 1;
         while(vp_index[index_node + i] != FLAG_NO_LEAF && i <= _sub_nodes_balanced) {
@@ -201,7 +202,6 @@ void Vptree::searchTree(int current_height, int index_node) {
 
             i++;
         }
-
         return;
     }
 
@@ -375,11 +375,11 @@ double *Vptree::point_with_corpus(double *query, double *corpus, int low, int hi
 double Vptree::points_distance(double *x, double *y) {
     double distance = 0;
 
-    //for (uint32_t k = 0; k < _dimensions; k++) distance += (x[k] - y[k]) * (x[k] - y[k]);
-    double d1 = cblas_ddot(_dimensions, x, 1, x, 1);
-    double d2 = cblas_ddot(_dimensions, y, 1, y, 1);
-    double d3 = cblas_ddot(_dimensions, x, 1, y, 1);
-    distance = d1 -2*d3 + d2;   
+    for (uint32_t k = 0; k < _dimensions; k++) distance += (x[k] - y[k]) * (x[k] - y[k]);
+    /* double d1 = cblas_ddot(_dimensions, x, 1, x, 1); */
+    /* double d2 = cblas_ddot(_dimensions, y, 1, y, 1); */
+    /* double d3 = cblas_ddot(_dimensions, x, 1, y, 1); */
+    /* distance = d1 -2*d3 + d2; */   
     distance = sqrt(distance);
 
     return distance;

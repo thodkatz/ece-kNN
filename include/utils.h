@@ -48,27 +48,18 @@ void transpose(double *src, double *dst, const uint32_t N, const uint32_t M);
 /*
  * \brief Naive quickselect implementation
  *
- * source: geeksforgeeks
- *
- */
-int64_t quickselect(double arr[], int64_t start, int64_t end, int64_t k);
-
-/*
- * \brief Parition array utilized for the quickselect
- *
- * Note: Use median of 3 to optimize performance
- */
-uint32_t partition(double arr[], uint32_t start, uint32_t end);
-
-/*
- * \brief Naive quickselect implementation
- *
  * Note: Returns the indeces of the k smalled values of a array \p v
  *
  * source: rosettacode database
  */
 double qselect_and_indeces(double *v, uint32_t *idx, int64_t len, int64_t k);
 
+
+/*
+ * \brief Naive quickselect implementation
+ *
+ * Take as input \p v and select the kth element (index one-based)
+ */
 double qselect(double *v, int64_t len, int64_t k);
 
 /*
@@ -78,13 +69,34 @@ double qselect(double *v, int64_t len, int64_t k);
  */
 int medianThree(double *array, int a, int b, int c);
 
-double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
-
+/*
+ * \brief Calculate distance matrix without using cblas routines
+ *
+ */
 double *euclidean_distance_naive(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
 
-double *euclidean_distance_notrans(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
+/*
+ * \brief Calculate distance matrix making use of cblas routines
+ *
+ */
+double *euclidean_distance(double *x, double *y, uint32_t n, uint32_t d, uint32_t m);
+
+/* 
+ * \brief Divide an array nxd to a fair amount to each process and track the size and the memory displacement
+ *
+ */
+void memdistr(int n, int d, int numtasks, int *size_per_proc, int *memory_offset);
 
 /*
+ * \brief Shift elements of an array one time to the left
+ */
+void rotate_left(int *arr, int size);
+
+/*
+ * \brief For a given matrix divided to parts, for each part adjust the indeces as viewed by the total matrix
+ */
+void adjust_indeces(uint32_t *arr, uint32_t row, uint32_t col, int offset);/*
+
  * \brief Print 1d array using ; sepatated values format
  *
  * Format:

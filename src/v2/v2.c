@@ -51,7 +51,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
         srand(1);
         MALLOC(double, x, n*d);
 
-        //printf("Random generated corpus...\n");
+        printf("Random generated corpus...\n");
         for (uint32_t i = 0; i< n; i++) {
             for (uint32_t j = 0; j < d; j++) {
                 x[i*d + j] = (double)(rand()%100);
@@ -108,7 +108,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
         // round up n to the next power of 2 finding the nodes of a balanced tree
         float log2points = LOG2(corpus_points);
         height_tree[i] = ceil(log2points); // assume root: 1th height
-        if(height_tree[i] == floor(log2points)) height_tree[i] += 1;
+        //if(height_tree[i] == floor(log2points)) height_tree[i] += 1;
         num_nodes_balanced_per_proc[i] = pow(2, height_tree[i]) - 1;
         //if(rank == MASTER) printf("The height of the complete tree is %d (assume root is in the 1st height)\n", height_tree[i]);
         //if(rank == MASTER) printf("The total number of nodes for a balanced tree %d\n", num_nodes_balanced_per_proc[i]);
@@ -128,7 +128,7 @@ knnresult distrAllkNN(double *x, uint32_t n, uint32_t d, uint32_t k, int argc, c
     memcpy(vpt_buffer, init_buffer, sizeof(double) * corpus_size_per_proc[rank]);
 
     const float target_height_tree_percent = 1;
-    //printf("The height percentage is %f\n", target_height_tree_percent);
+    printf("The height percentage is %f\n", target_height_tree_percent);
 
     Vptree vpt(vpt_buffer, indeces_per_process, m_per_process, d, num_nodes_balanced_per_proc[rank], height_tree[rank], target_height_tree_percent);
 
