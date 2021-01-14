@@ -22,7 +22,7 @@ class Vptree {
         double     *vp_mu;                 // Radius/median for every node
         double     *vp_coords;             // Coordinates of vantage point
         int        *vp_index;              // Index of vantage point that corresponds to the index of a point of the local corpus
-        int total_nodes_visited  = 0; // Total numbers visited to find kNN. This will can be compared with the _n x _n
+        int total_nodes_visited  = 0;      // Total numbers visited to find kNN
 
     private:
         int _height_tree;               // The height of the tree
@@ -66,16 +66,31 @@ class Vptree {
          *
          * For the root we picked the vantage point based on the variance given two random samples. For the rest we picked the furthest vantage point from the previous
          *
-         * \param
-         * \param
-         * \param
          * \return The row index (coordinates) of the corpus
          */
         //void select_vp(double *cords, uint32_t *index, double *corpus, int low, int high);
         int select_vp(int low, int high, int index_node);
 
         /*
-         * For the target node, calcuate all the distances to the given local corpus
+         * Suggested vantage point selection by Peter Yianilos
+         */
+        int variance_select_vp(int low, int high);
+
+        /*
+         * Reservoir sampling
+         * 
+         * Sample the values of \p vals and keep track of the \p indeces
+         */
+        void sample_and_indeces(double *vals, uint32_t *indeces, int num, int low, int high);
+
+        /*
+         * Reservoir sampling
+         * 
+         */
+        void sample(double *vals, int num, int low, int high);
+
+        /*
+         * For the target node, calculate all the distances to the given local corpus
          *
          */
         double *point_with_corpus(double *y, double *corpus, int low, int high);
@@ -89,7 +104,7 @@ class Vptree {
         double points_distance(double *x, double *y);
 
         /*
-         * A modified quciselect. Based on the distance, the index and the corpus are rearranged
+         * A modified quickselect. Based on the distance, the index and the corpus are rearranged
          *
          * TODO: Compate with std::nth_element C++ utility
          */
@@ -102,12 +117,6 @@ class Vptree {
          * \param index_second The index of the second element of the 2d array. The column size should be considered.
          */
         void swap_row(int index_first, int index_second, double *array, int cols);
-
-        void sample_and_indeces(double *vals, uint32_t *indeces, int num, int low, int high);
-
-        void sample(double *vals, int num, int low, int high);
-
-        int variance_select_vp(int low, int high);
 
     public:
 

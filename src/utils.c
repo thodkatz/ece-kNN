@@ -358,7 +358,6 @@ void print_dataset(double *array, uint32_t row, uint32_t col) {
     }
 }
 
-
 void print_input_file(FILE *f, double *array, uint32_t row, uint32_t col) {
     for (uint32_t i = 0; i < row; i++) {
         for (uint32_t j = 0; j < col; j++) {
@@ -387,7 +386,6 @@ void print_dataset_yav(double *array, uint32_t row, uint32_t col) {
     }
 
 }
-
 
 void print_indeces(uint32_t *array, uint32_t row, uint32_t col) {
     for(uint32_t i = 0; i < row; i++)
