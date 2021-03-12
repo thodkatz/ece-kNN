@@ -1,32 +1,18 @@
-# Compile and run
+<h1> Table of contents </h1>
 
-`$ make <version>`  
-Available targets: v0 v1 v2  
-e.g.   
-`$ make v0`  
-  
-Version 0 doesn't use MPI routines  
-`$ ./bin/v0`  
-For v1 and v2:  
-`$ mpic++ -n <number of processors> ./bin/<version> <dataset> <number of neighbors>`  
-e.g.   
-`$ mpic++ -n 4 ./bin/v1 datasets/corel/CorelMoments.asc 10`  
+- [Description](#description)
+  - [V0 Sequential](#v0-sequential)
+  - [V1 Asynchronous](#v1-asynchronous)
+  - [V2 Avoid computing all-to-all distances](#v2-avoid-computing-all-to-all-distances)
+  - [What to submit](#what-to-submit)
+  - [Afternotes](#afternotes)
+- [Report](#report)
+- [Compile and run](#compile-and-run)
+  - [Options](#options)
+- [Output](#output)
+- [Validation](#validation)
 
-## Options
 
-- For large input data configure the number of blocks for v0 editing the macro `#define BLOCKS <number of blocks>` in `src/v0/main.c`.
-- For testing with random matrices for v0, v1, v2 edit the macro `#define RANDOM` in `src/v0/main.c`, `src/v1/v1.c` and `src/v2/v2.c` respectively.
-- For testing different communication models regarding MPI for v1 edit the macro `#define RING` in `src/v1/v1.c`
-- Regarding vp-tree, control the height of the tree by `const float target_height_tree_percent = <desired value 0-1>` in `src/v2/v2.c`. By default is 1.0 (full balanced tree)
-- Vantage point can be selected with three ways. Navigate in `src/v2/Vptree.cpp` and in `makeTree()` edit the corresponding lines to test different selection methods.
-
-# Output
-
-Each time you run a version, you can see its output under `logs/`. Each log file contains the distances appended with the indices of the k nearest neighbors.
-
-# Validation
-
-- After running the program for all the three versions, run the Matlab script. 
 
 # Description
 
@@ -36,7 +22,7 @@ The set of X points will be passed to you as an input array along with the numbe
 
 Each MPI process Pi will calculate the distance of its own points from all other points and record the distances and indices of the k nearest for each of its own points.
 
-# V0 Sequential
+## V0 Sequential
 
 Write the sequential version, which finds for each point in a query set Y the k nearest neighbors in the corpus set X, according to this spec
 
@@ -78,7 +64,7 @@ Hint: Use high-performance BLAS routines, for matrix multiplication. For large v
 
 After that, only keep the k shortest distances and the indices of the corresponding points (using k-select).
 
-# V1 Asynchronous
+## V1 Asynchronous
 
 Use your V0 code to run as p MPI processes and find the all kNN of the points that are distributed in disjoint blocks to all processes, according to the following spec
 
@@ -105,22 +91,63 @@ We move the data along a ring, (receive from previous and send to the next proce
 - Assume that you can fit in memory the local points X (corpus), the points Y (query) you are working with, and space for the incoming (query) points Z.
 - Use pointers to exchange the locations Y and Z
 
-# V2 Avoid computing all-to-all distances
+## V2 Avoid computing all-to-all distances
 
 Build a Vantage Point Tree (VPT) with the local corpus data points. Stop when leaves contain up to B>1 points, for a reasonable choice value. Extend V1 to V2 where you pre-compute the VPT of the points X locally and use them to query with the working sets Y. In this version, you will pass the VPT along the ring.
 
 - Compare run times and make sure you agree with the V1 results
 
-# What to submit
+## What to submit
 
 - A 3-page report in PDF format (any pages after the 3rd one will not be taken into account). Report execution times of your implementations with respect to the number of data points n, the number of dimensions d, and the number of processes p. Use 10,000sqrt(p)≤n≤25,000sqrt(p) and 3≤d≤20 and 10≤k≤100. Test with both random matrices, and real-data from https://archive.ics.uci.edu/ml/datasets.php.
 - Upload the source code on GitHub, BitBucket, Dropbox, Google Drive, etc. and add a link in your report.
 - Check the validation of your code using the automated tester on e-learning.
 
-# Afternotes
+## Afternotes
 We can build a global VPT without broadcasting the local points but only the vantage point and median distance at each tree node. Then we can store and use the in-out sequence “signature” of each point to zoom in directly to the subtrees that can provably contain the neighbors and exclude other subtrees.
 
 The VPT construction can be parallelized locally within each process, using Pthreads, Cilk, or openMP.
 
+# Report
 
+[Parallel k-Nearest Neighbors](report/report.pdf)
 
+# Compile and run
+
+``` shell
+$ make <version>
+```  
+Available targets: v0 v1 v2  
+e.g.   
+``` shell
+$ make v0
+```  
+  
+Version 0 doesn't use MPI routines (serial)  
+``` shell
+$ ./bin/v0
+```  
+For v1 and v2:  
+``` shell
+$ mpirun -n <number of processors> ./bin/<version> <dataset> <number of neighbors>
+```  
+e.g.   
+```
+$ mpirun -n 4 ./bin/v1 datasets/corel/CorelMoments.asc 10
+```  
+
+## Options
+
+- For large input data configure the number of blocks for v0 editing the macro `#define BLOCKS <number of blocks>` in `src/v0/main.c`.
+- For testing with random matrices for v0, v1, v2 edit (comment/uncomment) the macro `#define RANDOM` in `src/v0/main.c`, `src/v1/v1.c` and `src/v2/v2.c` respectively.
+- For testing different communication models regarding MPI for v1 edit (comment/uncomment) the macro `#define RING` in `src/v1/v1.c`
+- Regarding vp-tree, control the height of the tree by `const float target_height_tree_percent = <desired value 0-1>` in `src/v2/v2.c`. By default is 1.0 (full balanced tree)
+- Vantage point can be selected with three ways. Navigate in `src/v2/Vptree.cpp` and in `makeTree()` edit the corresponding lines to test different selection methods.
+
+# Output
+
+Each time you run a version, you can see its output under `logs/`. Each log file contains the distances appended with the indices of the k nearest neighbors.
+
+# Validation
+
+After running the program for all the three versions, run the Matlab script. 
